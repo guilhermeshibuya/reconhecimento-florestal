@@ -17,26 +17,30 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         >
-        <TextView
-            android:layout_column="0"
-            android:layout_columnSpan="4"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Olá, seja bem-vindo!" />
 
         <TextView
-            android:maxWidth="240dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_columnSpan="4"
+            android:text="Olá, seja bem-vindo!"
+            android:textColor="@color/p8"
+            android:textSize="20sp" />
+
+        <TextView
+            android:layout_height="wrap_content"
             android:layout_column="0"
             android:layout_columnSpan="3"
-            android:layout_height="wrap_content"
-            android:text="Para começar, tire uma foto ou escolha uma da galeria" />
+            android:maxWidth="240dp"
+            android:text="Para começar, tire uma foto ou escolha uma da galeria"
+            android:textColor="@color/c10"
+            android:textSize="16sp" />
 
     </GridLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="500dp"
-        android:layout_columnSpan="4"
         android:orientation="vertical"
         android:padding="24dp"
         android:background="@drawable/border_radius_bg"
