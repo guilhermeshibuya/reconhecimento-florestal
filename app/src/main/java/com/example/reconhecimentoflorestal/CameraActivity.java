@@ -1,18 +1,35 @@
 package com.example.reconhecimentoflorestal;
 
+import android.app.Activity;
+import android.content.ContentValues;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.hardware.usb.UsbDevice;
+import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContract;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.canhub.cropper.CropImage;
+import com.canhub.cropper.CropImageContract;
+import com.canhub.cropper.CropImageContractOptions;
+import com.canhub.cropper.CropImageOptions;
+import com.canhub.cropper.CropImageView;
 import com.herohan.uvcapp.CameraHelper;
 import com.herohan.uvcapp.ICameraHelper;
 import com.herohan.uvcapp.ImageCapture;
@@ -23,6 +40,8 @@ import com.serenegiant.utils.UriHelper;
 import com.serenegiant.widget.AspectRatioSurfaceView;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +51,62 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
 
     private ICameraHelper mCameraHelper;
     private AspectRatioSurfaceView mCameraViewMain;
+    ActivityResultLauncher<CropImageContractOptions> cropImage = registerForActivityResult(
+            new CropImageContract(),
+            result -> {
+                if (result.isSuccessful()) {
+                    Bitmap cropped = BitmapFactory.decodeFile(result.getUriFilePath(getApplicationContext(), true));
+                    saveImage(cropped);
+;                }
+            });
+
+    private void launchImageCropper(Uri uri) {
+        CropImageOptions cropImageOptions = new CropImageOptions();
+        cropImageOptions.imageSourceIncludeGallery = true;
+        cropImageOptions.imageSourceIncludeCamera = true;
+
+        cropImageOptions.autoZoomEnabled = true;
+
+        cropImageOptions.toolbarColor = Color.rgb(90, 194,121);
+        cropImageOptions.activityMenuTextColor = Color.rgb(0, 22,9);
+        cropImageOptions.toolbarBackButtonColor = Color.rgb(0, 22,9);
+        cropImageOptions.activityMenuIconColor = Color.rgb(0, 22,9);
+
+        CropImageContractOptions cropImageContractOptions = new CropImageContractOptions(uri, cropImageOptions);
+
+        cropImage.launch(cropImageContractOptions);
+    }
+
+    private void saveImage(Bitmap bitmap) {
+        File file = FileUtils.getCaptureFile(
+                this,
+                Environment.DIRECTORY_DCIM,
+                ".jpg");
+        try {
+            OutputStream outputStream = new FileOutputStream(file);
+
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+            outputStream.flush();
+            outputStream.close();
+
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Images.Media.DATA, file.getAbsolutePath());
+            values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpg");
+            getApplicationContext().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+
+            MediaScannerConnection.scanFile(getApplicationContext(), new String[]{ file.getAbsolutePath()}, null, null);
+
+            Toast.makeText(
+                    getApplicationContext(),
+                    "Foto salva",
+                    Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(
+                    getApplicationContext(),
+                    "Erro ao salvar a imagem recortada",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -156,10 +231,13 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
                 mCameraHelper.takePicture(options, new ImageCapture.OnImageCaptureCallback() {
                     @Override
                     public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
+                        launchImageCropper(outputFileResults.getSavedUri());
+
                         Toast.makeText(
                                 CameraActivity.this,
-                                "save \"" + UriHelper.getPath(CameraActivity.this, outputFileResults.getSavedUri()) + "\"",
+                                "Foto salva",
                                 Toast.LENGTH_SHORT).show();
+
                     }
 
                     @Override

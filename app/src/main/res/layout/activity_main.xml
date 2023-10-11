@@ -1,87 +1,90 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/gradient"
     tools:context=".MainActivity">
 
-    <GridLayout
-        android:id="@+id/backgroundTop"
-        android:layout_width="match_parent"
-        android:layout_height="300dp"
-        android:columnCount="4"
-        android:padding="24dp"
-        android:background="@drawable/gradient"
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Olá, seja bem-vindo!"
+        android:textColor="@color/p8"
+        android:textSize="20sp"
+        android:layout_marginLeft="24dp"
+        android:layout_marginTop="48dp"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        >
+        app:layout_constraintStart_toStartOf="parent"/>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_column="0"
-            android:layout_columnSpan="4"
-            android:text="Olá, seja bem-vindo!"
-            android:textColor="@color/p8"
-            android:textSize="20sp" />
-
-        <TextView
-            android:layout_height="wrap_content"
-            android:layout_column="0"
-            android:layout_columnSpan="3"
-            android:maxWidth="240dp"
-            android:text="Para começar, tire uma foto ou escolha uma da galeria"
-            android:textColor="@color/c10"
-            android:textSize="16sp" />
-
-    </GridLayout>
+    <TextView
+        android:id="@+id/subtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxWidth="240dp"
+        android:text="Para começar, tire uma foto ou escolha uma da galeria"
+        android:textColor="@color/c10"
+        android:textSize="16sp"
+        android:layout_marginLeft="24dp"
+        app:layout_constraintTop_toBottomOf="@id/title"
+        app:layout_constraintStart_toStartOf="parent"/>
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="500dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="24dp"
+        android:background="@drawable/border_radius_bg"
+        android:elevation="24dp"
+        android:gravity="center_vertical"
         android:orientation="vertical"
         android:padding="24dp"
-        android:background="@drawable/border_radius_bg"
-        android:layout_alignParentBottom="true"
-        android:gravity="center_vertical"
-        android:elevation="24dp"
-        >
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/subtitle">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnOpenCamera"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingVertical="12dp"
             android:backgroundTint="@color/p4"
+            android:paddingVertical="12dp"
             android:text="TIRAR FOTO"
+            android:textAllCaps="true"
+            android:textColor="@color/p8"
+            android:textSize="16sp"
+            android:textAlignment="center"
             app:icon="@drawable/camera"
             app:iconGravity="textStart"
-            app:iconTint="@color/p8"
-            android:textColor="@color/p8"
-            />
+            app:iconTint="@color/p8" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:gravity="center"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
             android:text="ou"
             android:textColor="@color/c10"
-            />
+            android:textSize="14sp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnChoosePicture"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="fill_horizontal"
-            android:paddingVertical="12dp"
             android:backgroundTint="@color/p4"
+            android:paddingVertical="12dp"
             android:text="ESCOLHER FOTO"
+            android:textAllCaps="true"
+            android:textColor="@color/p8"
+            android:textSize="16sp"
+            android:textAlignment="center"
             app:icon="@drawable/image"
             app:iconGravity="textStart"
-            app:iconTint="@color/p8"
-            android:textColor="@color/p8"
-            />
+            app:iconTint="@color/p8" />
     </LinearLayout>
-</RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

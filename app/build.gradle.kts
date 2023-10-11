@@ -41,4 +41,5 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     implementation("com.herohan:UVCAndroid:1.0.5")
     implementation("com.github.getActivity:XXPermissions:18.3")
+    implementation("com.vanniktech:android-image-cropper:4.5.0")
 }
