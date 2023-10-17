@@ -1,8 +1,6 @@
 package com.example.reconhecimentoflorestal;
 
-import android.app.Activity;
 import android.content.ContentValues;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -13,40 +11,33 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContract;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
-import com.canhub.cropper.CropImage;
 import com.canhub.cropper.CropImageContract;
 import com.canhub.cropper.CropImageContractOptions;
 import com.canhub.cropper.CropImageOptions;
-import com.canhub.cropper.CropImageView;
 import com.herohan.uvcapp.CameraHelper;
 import com.herohan.uvcapp.ICameraHelper;
 import com.herohan.uvcapp.ImageCapture;
-import com.hjq.permissions.XXPermissions;
 import com.serenegiant.usb.Size;
 import com.serenegiant.utils.FileUtils;
-import com.serenegiant.utils.UriHelper;
 import com.serenegiant.widget.AspectRatioSurfaceView;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.List;
-/*
-public class CameraActivity extends AppCompatActivity implements View.OnClickListener {
+
+public class UsbCameraFragment extends Fragment implements View.OnClickListener {
     private static final int DEFAULT_WIDTH = 640;
     private static final int DEFAULT_HEIGHT = 480;
 
@@ -56,9 +47,9 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
             new CropImageContract(),
             result -> {
                 if (result.isSuccessful()) {
-                    Bitmap cropped = BitmapFactory.decodeFile(result.getUriFilePath(getApplicationContext(), true));
+                    Bitmap cropped = BitmapFactory.decodeFile(result.getUriFilePath(requireContext().getApplicationContext(), true));
                     saveImage(cropped);
-;                }
+                }
             });
 
     private void launchImageCropper(Uri uri) {
@@ -80,7 +71,7 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
 
     private void saveImage(Bitmap bitmap) {
         File file = FileUtils.getCaptureFile(
-                this,
+                requireContext(),
                 Environment.DIRECTORY_DCIM,
                 ".jpg");
         try {
@@ -93,32 +84,33 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
             ContentValues values = new ContentValues();
             values.put(MediaStore.Images.Media.DATA, file.getAbsolutePath());
             values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpg");
-            getApplicationContext().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+            requireContext().getApplicationContext().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
 
-            MediaScannerConnection.scanFile(getApplicationContext(), new String[]{ file.getAbsolutePath()}, null, null);
+            MediaScannerConnection.scanFile(requireContext().getApplicationContext(), new String[]{ file.getAbsolutePath()}, null, null);
 
             Toast.makeText(
-                    getApplicationContext(),
+                    requireContext().getApplicationContext(),
                     "Foto salva",
                     Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
             Toast.makeText(
-                    getApplicationContext(),
+                    requireContext().getApplicationContext(),
                     "Erro ao salvar a imagem recortada",
                     Toast.LENGTH_SHORT).show();
         }
     }
 
+    @Nullable
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.camera_activity);
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.usb_camera_fragment, container, false);
+        initViews(view);
 
-        initViews();
+        return view;
     }
 
-    private void initViews() {
-        mCameraViewMain = findViewById(R.id.svCameraViewMain);
+    private void initViews(View view) {
+        mCameraViewMain = view.findViewById(R.id.svCameraViewMain);
         mCameraViewMain.setAspectRatio(DEFAULT_WIDTH, DEFAULT_HEIGHT);
 
         mCameraViewMain.getHolder().addCallback(new SurfaceHolder.Callback() {
@@ -140,18 +132,18 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
             }
         });
 
-        ImageButton btnCaptureImage = findViewById(R.id.btnCaptureImage);
+        ImageButton btnCaptureImage = view.findViewById(R.id.btnCaptureImage);
         btnCaptureImage.setOnClickListener(this);
     }
 
     @Override
-    protected void onStart() {
+    public void onStart() {
         super.onStart();
         initCameraHelper();
     }
 
     @Override
-    protected void onStop() {
+    public void onStop() {
         super.onStop();
         clearCameraHelper();
     }
@@ -218,12 +210,45 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
         public void onCancel(UsbDevice device) { }
     };
 
+    protected void takePhoto() {
+        if (mCameraHelper != null) {
+            File file = FileUtils.getCaptureFile(
+                    requireContext(),
+                    Environment.DIRECTORY_DCIM,
+                    ".jpg");
+
+            ImageCapture.OutputFileOptions options = new ImageCapture.OutputFileOptions.Builder(file).build();
+
+            mCameraHelper.takePicture(options, new ImageCapture.OnImageCaptureCallback() {
+
+                @Override
+                public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
+                    launchImageCropper(outputFileResults.getSavedUri());
+
+                    Toast.makeText(
+                            requireContext(),
+                            "Foto salva",
+                            Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onError(int imageCaptureError, @NonNull String message, @Nullable Throwable cause) {
+                    Toast.makeText(
+                            requireContext(),
+                            message,
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+    }
+
     @Override
     public void onClick(View v) {
-        if (v.getId() == R.id.btnCaptureImage) {
+        //if (v.getId() == R.id.btnCaptureImage) {
+        if (v.getId() == R.id.btnTakePhoto) {
             if (mCameraHelper != null) {
                 File file = FileUtils.getCaptureFile(
-                        this,
+                        requireContext(),
                         Environment.DIRECTORY_DCIM,
                         ".jpg");
 
@@ -235,75 +260,20 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
                         launchImageCropper(outputFileResults.getSavedUri());
 
                         Toast.makeText(
-                                CameraActivity.this,
+                                requireContext(),
                                 "Foto salva",
                                 Toast.LENGTH_SHORT).show();
-
                     }
 
                     @Override
                     public void onError(int imageCaptureError, @NonNull String message, @Nullable Throwable cause) {
                         Toast.makeText(
-                                CameraActivity.this,
+                                requireContext(),
                                 message,
                                 Toast.LENGTH_SHORT).show();
                     }
                 });
             }
         }
-    }
-}
-*/
-
-public class CameraActivity extends AppCompatActivity implements View.OnClickListener {
-    private boolean isCameraActive = true;
-    private UsbCameraFragment usbCameraFragment;
-    private BackCameraFragment backCameraFragment;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_camera);
-
-        usbCameraFragment = new UsbCameraFragment();
-        backCameraFragment = new BackCameraFragment();
-
-        if (savedInstanceState == null) {
-            getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.frameLayout,backCameraFragment)
-                    .commit();
-        }
-
-        ImageButton btnSwitchCamera = findViewById(R.id.btnSwitchCamera);
-        btnSwitchCamera.setOnClickListener(this);
-        ImageButton btnTakePhoto = findViewById(R.id.btnTakePhoto);
-        btnTakePhoto.setOnClickListener(this);
-    }
-
-    @Override
-    public void onClick(View v) {
-        if (v.getId() == R.id.btnSwitchCamera) {
-            toggleCameraView();
-        } else if (v.getId() == R.id.btnTakePhoto) {
-            if (isCameraActive) {
-                backCameraFragment.takePhoto();
-            } else {
-                usbCameraFragment.takePhoto();
-            }
-        }
-    }
-
-    private void toggleCameraView() {
-        if (isCameraActive) {
-            getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.frameLayout, usbCameraFragment)
-                    .commit();
-        } else {
-            getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.frameLayout, backCameraFragment)
-                    .commit();
-        }
-
-        isCameraActive = !isCameraActive;
     }
 }
