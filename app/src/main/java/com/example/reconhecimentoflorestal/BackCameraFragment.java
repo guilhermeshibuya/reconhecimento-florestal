@@ -18,6 +18,7 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.camera.core.Camera;
 import androidx.camera.core.CameraProvider;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.CameraState;
@@ -45,6 +46,8 @@ import java.util.concurrent.Executor;
 public class BackCameraFragment extends Fragment {
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private ImageCapture imageCapture;
+    private Camera camera;
+    private ProcessCameraProvider cameraProvider;
     PreviewView previewView;
     @Nullable
     @Override
@@ -57,7 +60,7 @@ public class BackCameraFragment extends Fragment {
         cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext());
         cameraProviderFuture.addListener(() -> {
             try {
-                ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
+                cameraProvider = cameraProviderFuture.get();
                 startCamera(cameraProvider);
             } catch (ExecutionException e) {
                 e.printStackTrace();
@@ -87,7 +90,13 @@ public class BackCameraFragment extends Fragment {
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                 .build();
 
-        cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, preview, imageCapture);
+        camera = cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, preview, imageCapture);
+    }
+
+    protected void enableTorch() {
+        if (camera.getCameraInfo().hasFlashUnit()) {
+            camera.getCameraControl().enableTorch(true);
+        }
     }
 
     protected void takePhoto() {

@@ -11,6 +11,16 @@
         android:layout_height="match_parent" />
 
     <ImageButton
+        android:id="@+id/btnEnableTorch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/btnTakePhoto"
+        android:layout_marginBottom="48dp"
+        android:background="@drawable/round_button"/>
+
+    <ImageButton
         android:id="@+id/btnTakePhoto"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -25,7 +35,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="@+id/btnTakePhoto"
+        app:layout_constraintStart_toEndOf="@+id/btnTakePhoto"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginBottom="48dp"
         android:background="@drawable/round_button"/>

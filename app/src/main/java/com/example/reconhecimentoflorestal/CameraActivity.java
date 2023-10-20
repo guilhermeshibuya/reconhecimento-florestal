@@ -278,6 +278,8 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
         btnSwitchCamera.setOnClickListener(this);
         ImageButton btnTakePhoto = findViewById(R.id.btnTakePhoto);
         btnTakePhoto.setOnClickListener(this);
+        ImageButton btnEnableTorch = findViewById(R.id.btnEnableTorch);
+        btnEnableTorch.setOnClickListener(this);
     }
 
     @Override
@@ -289,6 +291,10 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
                 backCameraFragment.takePhoto();
             } else {
                 usbCameraFragment.takePhoto();
+            }
+        } else if (v.getId() == R.id.btnEnableTorch) {
+            if (isCameraActive) {
+                backCameraFragment.enableTorch();
             }
         }
     }
