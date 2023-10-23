@@ -48,6 +48,7 @@ public class BackCameraFragment extends Fragment {
     private ImageCapture imageCapture;
     private Camera camera;
     private ProcessCameraProvider cameraProvider;
+    private boolean isTorchOn = false;
     PreviewView previewView;
     @Nullable
     @Override
@@ -95,7 +96,13 @@ public class BackCameraFragment extends Fragment {
 
     protected void enableTorch() {
         if (camera.getCameraInfo().hasFlashUnit()) {
-            camera.getCameraControl().enableTorch(true);
+            if (!isTorchOn) {
+                camera.getCameraControl().enableTorch(true);
+                isTorchOn = true;
+            } else {
+                camera.getCameraControl().enableTorch(false);
+                isTorchOn = false;
+            }
         }
     }
 
