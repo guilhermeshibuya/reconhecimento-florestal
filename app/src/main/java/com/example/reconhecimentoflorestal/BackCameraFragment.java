@@ -201,95 +201,18 @@ public class BackCameraFragment extends Fragment {
 
 
             // NOVO CÓDIGO
-            Bitmap cropped = BitmapFactory.decodeFile(file.getAbsolutePath());
-            float[][][][] inputArray = preprocessImages(cropped);
+            ModelUtilities modelUtilities = new ModelUtilities(getContext());
 
-            runInference(inputArray);
+            Bitmap cropped = BitmapFactory.decodeFile(file.getAbsolutePath());
+
+            float[][][][] inputArray = modelUtilities.preprocessImages(cropped);
+
+            modelUtilities.runInference(inputArray);
         } catch (Exception e) {
             Toast.makeText(
                     requireContext().getApplicationContext(),
                     "Erro ao salvar a imagem recortada",
                     Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private float[] resizeImage(Bitmap bitmap) {
-        Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, 224, 224, true);
-        float[] inputArray = convertBitmapToArray(resizedBitmap);
-
-        return inputArray;
-    }
-
-    private static float[] convertBitmapToArray(Bitmap bitmap)  {
-        float[] inputArray = new float[3 * 224 * 224];
-
-        int idx = 0;
-        for (int y = 0; y < 224; y++) {
-            for (int x = 0; x < 224; x++) {
-                int pixel = bitmap.getPixel(x, y);
-
-                float red = (float) ((pixel >> 16) & 0xFF);
-                float green = (float) ((pixel >> 8) & 0xFF);
-                float blue = (float) (pixel & 0xFF);
-
-                inputArray[idx++] = red / 255.0f;
-                inputArray[idx++] = green / 255.0f;
-                inputArray[idx++] = blue / 255.0f;
-            }
-        }
-        return inputArray;
-    }
-
-    private float[][][][] preprocessImages(Bitmap bitmap) {
-        Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, 224, 224, true);
-        float[][][][] inputArray = new float[1][3][224][224]; // Batch size = 1
-
-        // Converte a imagem em um array de float
-        for (int y = 0; y < 224; y++) {
-            for (int x = 0; x < 224; x++) {
-                int pixel = resizedBitmap.getPixel(x, y);
-                inputArray[0][0][y][x] = Color.red(pixel) / 255.0f;
-                inputArray[0][1][y][x] = Color.green(pixel) / 255.0f;
-                inputArray[0][2][y][x] = Color.blue(pixel) / 255.0f;
-            }
-        }
-        return inputArray;
-    }
-
-    private void runInference(float[][][][] inputArray) {
-        try {
-            OrtEnvironment env = OrtEnvironment.getEnvironment();
-            OrtSession.SessionOptions options = new OrtSession.SessionOptions();
-
-            // Obtém o identificador do recurso raw do modelo ONNX
-            int resourceId = getResources().getIdentifier("model", "raw",requireContext().getPackageName());
-
-            InputStream inputStream = getResources().openRawResource(resourceId);
-
-            File modelFile = new File(requireContext().getCacheDir(), "model.onnx");
-            FileOutputStream outputStream = new FileOutputStream(modelFile);
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = inputStream.read(buffer)) > 0) {
-                outputStream.write(buffer, 0, length);
-            }
-            outputStream.close();
-            inputStream.close();
-
-            OrtSession session = env.createSession(modelFile.getAbsolutePath(), options);
-
-            OnnxTensor inputTensor = OnnxTensor.createTensor(env, inputArray);
-            OrtSession.Result output = session.run(Collections.singletonMap("images", inputTensor));
-
-            float[][] outputValues = (float[][]) output.get(0).getValue();
-
-            for (float[] row: outputValues) {
-                Log.d("RESULTADO DO MODELO", Arrays.toString(row));
-            }
-
-            inputTensor.close();
-        } catch(Exception e) {
-            e.printStackTrace();
         }
     }
 }
