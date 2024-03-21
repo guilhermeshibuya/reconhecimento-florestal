@@ -109,6 +109,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     getApplicationContext(),
                     "Foto salva",
                     Toast.LENGTH_SHORT).show();
+
+            // NOVO CÓDIGO
+            ModelUtilities modelUtilities = new ModelUtilities(this);
+
+            Bitmap cropped = BitmapFactory.decodeFile(file.getAbsolutePath());
+
+            float[][][][] inputArray = modelUtilities.preprocessImages(cropped);
+
+            modelUtilities.runInference(inputArray);
         } catch (Exception e) {
             Toast.makeText(
                     getApplicationContext(),
