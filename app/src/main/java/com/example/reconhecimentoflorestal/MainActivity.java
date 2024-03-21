@@ -34,7 +34,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+
+import ai.onnxruntime.OnnxTensor;
+import ai.onnxruntime.OrtEnvironment;
+import ai.onnxruntime.OrtSession;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     ActivityResultLauncher<CropImageContractOptions> cropImage = registerForActivityResult(
