@@ -116,22 +116,16 @@ public class BackCameraFragment extends Fragment {
     }
 
     protected void takePhoto() {
-        File file = FileUtils.getCaptureFile(
-                requireContext(),
-                Environment.DIRECTORY_DCIM,
-                ".jpg");
+        ImageCapture.OutputFileOptions outputFileOptions = new ImageCapture.OutputFileOptions.Builder(
+                new File(requireContext().getCacheDir(), "temp.jpg")
+        ).build();
 
         imageCapture.takePicture(
-                new ImageCapture.OutputFileOptions.Builder(file).build(),
+                outputFileOptions,
                 getExecutor(),
                 new ImageCapture.OnImageSavedCallback() {
                     @Override
                     public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
-                        Toast.makeText(
-                                requireContext(),
-                                "Foto salva",
-                                Toast.LENGTH_SHORT).show();
-
                         launchImageCropper(outputFileResults.getSavedUri());
                     }
 
@@ -152,6 +146,14 @@ public class BackCameraFragment extends Fragment {
                 if (result.isSuccessful()) {
                     Bitmap cropped = BitmapFactory.decodeFile(result.getUriFilePath(requireContext().getApplicationContext(), true));
                     saveImage(cropped);
+
+                    File tempFile = new File(requireContext().getCacheDir(), "temp.jpg");
+                    if (tempFile.exists()) {
+                        boolean deleted = tempFile.delete();
+                        if (!deleted) {
+                            Toast.makeText(requireContext(), "Erro ao excluir a imagem temporária", Toast.LENGTH_SHORT).show();
+                        }
+                    }
                 }
             });
 
