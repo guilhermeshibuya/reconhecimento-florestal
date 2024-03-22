@@ -49,6 +49,14 @@ public class UsbCameraFragment extends Fragment implements View.OnClickListener 
                 if (result.isSuccessful()) {
                     Bitmap cropped = BitmapFactory.decodeFile(result.getUriFilePath(requireContext().getApplicationContext(), true));
                     saveImage(cropped);
+
+                    File tempFile = new File(requireContext().getCacheDir(), "temp.jpg");
+                    if (tempFile.exists()) {
+                        boolean deleted = tempFile.delete();
+                        if (!deleted) {
+                            Toast.makeText(requireContext(), "Erro ao excluir a imagem temporária", Toast.LENGTH_SHORT).show();
+                        }
+                    }
                 }
             });
 
@@ -92,6 +100,15 @@ public class UsbCameraFragment extends Fragment implements View.OnClickListener 
                     requireContext().getApplicationContext(),
                     "Foto salva",
                     Toast.LENGTH_SHORT).show();
+
+            // NOVO CÓDIGO
+            ModelUtilities modelUtilities = new ModelUtilities(getContext());
+
+            Bitmap cropped = BitmapFactory.decodeFile(file.getAbsolutePath());
+
+            float[][][][] inputArray = modelUtilities.preprocessImages(cropped);
+
+            modelUtilities.runInference(inputArray);
         } catch (Exception e) {
             Toast.makeText(
                     requireContext().getApplicationContext(),
@@ -212,23 +229,15 @@ public class UsbCameraFragment extends Fragment implements View.OnClickListener 
 
     protected void takePhoto() {
         if (mCameraHelper != null) {
-            File file = FileUtils.getCaptureFile(
-                    requireContext(),
-                    Environment.DIRECTORY_DCIM,
-                    ".jpg");
+            ImageCapture.OutputFileOptions outputFileOptions = new ImageCapture.OutputFileOptions.Builder(
+                    new File(requireContext().getCacheDir(), "temp.jpg")
+            ).build();
 
-            ImageCapture.OutputFileOptions options = new ImageCapture.OutputFileOptions.Builder(file).build();
-
-            mCameraHelper.takePicture(options, new ImageCapture.OnImageCaptureCallback() {
+            mCameraHelper.takePicture(outputFileOptions, new ImageCapture.OnImageCaptureCallback() {
 
                 @Override
                 public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
                     launchImageCropper(outputFileResults.getSavedUri());
-
-                    Toast.makeText(
-                            requireContext(),
-                            "Foto salva",
-                            Toast.LENGTH_SHORT).show();
                 }
 
                 @Override
