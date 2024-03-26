@@ -253,7 +253,6 @@ public class UsbCameraFragment extends Fragment implements View.OnClickListener 
 
     @Override
     public void onClick(View v) {
-        //if (v.getId() == R.id.btnCaptureImage) {
         if (v.getId() == R.id.btnTakePhoto) {
             if (mCameraHelper != null) {
                 File file = FileUtils.getCaptureFile(

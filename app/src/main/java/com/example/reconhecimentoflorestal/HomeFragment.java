@@ -13,8 +13,9 @@ import android.os.Bundle;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -184,7 +185,12 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
                     }
 
                     if (v.getId() == R.id.btnOpenCamera) {
-                        startActivity(new Intent(requireContext(), CameraActivity.class));
+                        FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
+                        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+
+                        fragmentTransaction.replace(R.id.frameLayout, new CameraFragment());
+                        fragmentTransaction.addToBackStack(null);
+                        fragmentTransaction.commit();
                     } else if (v.getId() == R.id.btnChoosePicture) {
                         getImageFile();
                     }
