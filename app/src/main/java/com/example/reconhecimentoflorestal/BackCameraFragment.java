@@ -1,6 +1,7 @@
 package com.example.reconhecimentoflorestal;
 
 import android.content.ContentValues;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -31,6 +32,7 @@ import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.canhub.cropper.CropImageContract;
 import com.canhub.cropper.CropImageContractOptions;
@@ -199,15 +201,22 @@ public class BackCameraFragment extends Fragment {
                     "Foto salva",
                     Toast.LENGTH_SHORT).show();
 
-
-            // NOVO CÓDIGO
-            ModelUtilities modelUtilities = new ModelUtilities(getContext());
-
             Bitmap cropped = BitmapFactory.decodeFile(file.getAbsolutePath());
 
-            float[][][][] inputArray = modelUtilities.preprocessImages(cropped);
+            SharedViewModel sharedViewModel = new ViewModelProvider(this).get(SharedViewModel.class);
+            sharedViewModel.setImage(cropped);
 
-            modelUtilities.runInference(inputArray);
+            Intent intent = new Intent(getActivity(), MainActivity.class);
+            startActivity(intent);
+
+            // NOVO CÓDIGO
+//            ModelUtilities modelUtilities = new ModelUtilities(getContext());
+
+//            Bitmap cropped = BitmapFactory.decodeFile(file.getAbsolutePath());
+
+//            float[][][][] inputArray = modelUtilities.preprocessImages(cropped);
+
+//            modelUtilities.runInference(inputArray);
         } catch (Exception e) {
             Toast.makeText(
                     requireContext().getApplicationContext(),
