@@ -3,7 +3,8 @@
 
     <item android:title="Início"
         android:id="@+id/home"
-        android:icon="@drawable/rounded_home" />
+        android:icon="@drawable/rounded_home"
+        />
     <item android:title="Resultados"
         android:id="@+id/results"
         android:icon="@drawable/rounded_monitoring"
