@@ -49,11 +49,6 @@ import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 
-import ai.onnxruntime.OnnxTensor;
-import ai.onnxruntime.OrtEnvironment;
-import ai.onnxruntime.OrtException;
-import ai.onnxruntime.OrtSession;
-
 public class BackCameraFragment extends Fragment {
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private ImageCapture imageCapture;
@@ -205,9 +200,6 @@ public class BackCameraFragment extends Fragment {
 
             SharedViewModel sharedViewModel = new ViewModelProvider(this).get(SharedViewModel.class);
             sharedViewModel.setImage(cropped);
-
-            Intent intent = new Intent(getActivity(), MainActivity.class);
-            startActivity(intent);
 
             // NOVO CÓDIGO
 //            ModelUtilities modelUtilities = new ModelUtilities(getContext());
