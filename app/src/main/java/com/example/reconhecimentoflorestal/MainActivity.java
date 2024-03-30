@@ -5,12 +5,14 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import android.graphics.Bitmap;
 import android.os.Bundle;
 
 import com.example.reconhecimentoflorestal.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity  {
     ActivityMainBinding binding;
+    private SharedViewModel viewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,5 +40,12 @@ public class MainActivity extends AppCompatActivity  {
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
         fragmentTransaction.replace(R.id.frameLayout, fragment);
         fragmentTransaction.commit();
+    }
+
+    public void switchToResultsFragment() {
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.frameLayout, new ResultsFragment())
+                .addToBackStack(null)
+                .commit();
     }
 }
