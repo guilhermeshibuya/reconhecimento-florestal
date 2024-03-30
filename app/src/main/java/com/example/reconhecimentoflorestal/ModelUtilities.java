@@ -39,7 +39,9 @@ public class ModelUtilities {
         return inputArray;
     }
 
-    public void runInference(float[][][][] inputArray) {
+    public String runInference(float[][][][] inputArray) {
+        String results = "";
+
         try {
             OrtEnvironment env = OrtEnvironment.getEnvironment();
             OrtSession.SessionOptions options = new OrtSession.SessionOptions();
@@ -66,13 +68,21 @@ public class ModelUtilities {
 
             float[][] outputValues = (float[][]) output.get(0).getValue();
 
-            for (float[] row : outputValues) {
-                Log.d("RESULTADO DO MODELO", Arrays.toString(row));
-            }
-
             inputTensor.close();
+
+            results = formatResults(outputValues);
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return results;
+    }
+
+    private String formatResults(float[][] output) {
+        StringBuilder strBuilder = new StringBuilder();
+
+        for (int i = 0; i < output[0].length; i++) {
+            strBuilder.append("Classe ").append(i).append(": ").append(output[0][i]).append("\n");
+        }
+        return  strBuilder.toString();
     }
 }

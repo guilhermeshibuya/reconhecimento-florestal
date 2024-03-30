@@ -26,6 +26,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -42,12 +43,22 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 
 public class BackCameraFragment extends Fragment {
+    private MainActivity mainActivity;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private ImageCapture imageCapture;
     private Camera camera;
     private ProcessCameraProvider cameraProvider;
     private boolean isTorchOn = false;
     PreviewView previewView;
+    private SharedViewModel viewModel;
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+        mainActivity = (MainActivity) requireActivity();
+    }
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -189,9 +200,9 @@ public class BackCameraFragment extends Fragment {
                     Toast.LENGTH_SHORT).show();
 
             Bitmap cropped = BitmapFactory.decodeFile(file.getAbsolutePath());
+            viewModel.setImage(cropped);
 
-            SharedViewModel sharedViewModel = new ViewModelProvider(this).get(SharedViewModel.class);
-            sharedViewModel.setImage(cropped);
+            switchToResultsFragment();
 
             // NOVO CÓDIGO
 //            ModelUtilities modelUtilities = new ModelUtilities(getContext());
@@ -207,5 +218,9 @@ public class BackCameraFragment extends Fragment {
                     "Erro ao salvar a imagem recortada",
                     Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void switchToResultsFragment() {
+        mainActivity.switchToResultsFragment();
     }
 }
