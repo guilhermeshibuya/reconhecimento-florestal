@@ -3,6 +3,7 @@ package com.example.reconhecimentoflorestal;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.os.Debug;
 import android.util.Log;
 
 import java.io.File;
@@ -10,10 +11,13 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.Locale;
 
 import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtSession;
+import kotlin.jvm.internal.FloatSpreadBuilder;
 
 
 public class ModelUtilities {
@@ -77,12 +81,49 @@ public class ModelUtilities {
         return results;
     }
 
+    private void quickSort(float[] arr, int start, int end) {
+        if (start < end) {
+            int pivot = partition(arr, start, end);
+
+            quickSort(arr, start, pivot - 1);
+            quickSort(arr ,pivot + 1, end);
+        }
+    }
+
+    private int partition(float[] arr, int start, int end)
+    {
+        float pivot = arr[end];
+        int i = (start - 1);
+
+        for (int j = start; j < end; j++) {
+            if (arr[j] >= pivot) {
+                i++;
+
+                float temp = arr[i];
+                arr[i] = arr[j];
+                arr[j] = temp;
+            }
+        }
+        float temp = arr[i + 1];
+        arr[i + 1] = arr[end];
+        arr[end] = temp;
+
+        return i + 1;
+    }
+
+
+
+
     private String formatResults(float[][] output) {
+        float[] clone = output[0].clone();
+        quickSort(clone, 0, clone.length - 1);
+
         StringBuilder strBuilder = new StringBuilder();
 
-        for (int i = 0; i < output[0].length; i++) {
-            strBuilder.append("Classe ").append(i).append(": ").append(output[0][i]).append("\n");
+        for (int i = 0; i < 5; i++) {
+            float prob = clone[i] * 100;
+            strBuilder.append("Classe ").append(i).append(": ").append(String.format(Locale.getDefault(), "%.4f", prob)).append("%\n");
         }
-        return  strBuilder.toString();
+        return strBuilder.toString();
     }
 }
