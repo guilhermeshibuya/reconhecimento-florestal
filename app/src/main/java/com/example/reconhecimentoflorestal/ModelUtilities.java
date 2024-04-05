@@ -9,6 +9,7 @@ import android.util.Log;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -43,9 +44,8 @@ public class ModelUtilities {
         return inputArray;
     }
 
-    public String runInference(float[][][][] inputArray) {
-        String results = "";
-
+    public float[] runInference(float[][][][] inputArray) {
+        float[] results = null;
         try {
             OrtEnvironment env = OrtEnvironment.getEnvironment();
             OrtSession.SessionOptions options = new OrtSession.SessionOptions();
@@ -111,19 +111,21 @@ public class ModelUtilities {
         return i + 1;
     }
 
-
-
-
-    private String formatResults(float[][] output) {
+    private float[] formatResults(float[][] output) {
+        int n = 5;
         float[] clone = output[0].clone();
+        float[] results = new float[n];
+
         quickSort(clone, 0, clone.length - 1);
 
-        StringBuilder strBuilder = new StringBuilder();
+//        StringBuilder strBuilder = new StringBuilder();
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < n; i++) {
             float prob = clone[i] * 100;
-            strBuilder.append("Classe ").append(i).append(": ").append(String.format(Locale.getDefault(), "%.4f", prob)).append("%\n");
+            results[i] = prob;
+//            strBuilder.append("Classe ").append(i).append(": ").append(String.format(Locale.getDefault(), "%.4f", prob)).append("%\n");
         }
-        return strBuilder.toString();
+//        return strBuilder.toString();
+        return results;
     }
 }
