@@ -4,11 +4,14 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Debug;
+import android.util.Half;
 import android.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Collections;
@@ -51,11 +54,11 @@ public class ModelUtilities {
             OrtSession.SessionOptions options = new OrtSession.SessionOptions();
 
             // Obtém o identificador do recurso raw do modelo ONNX
-            int resourceId = mContext.getResources().getIdentifier("model", "raw", mContext.getPackageName());
+            int resourceId = mContext.getResources().getIdentifier("best3", "raw", mContext.getPackageName());
 
             InputStream inputStream = mContext.getResources().openRawResource(resourceId);
 
-            File modelFile = new File(mContext.getCacheDir(), "model.onnx");
+            File modelFile = new File(mContext.getCacheDir(), "best3.onnx");
             FileOutputStream outputStream = new FileOutputStream(modelFile);
             byte[] buffer = new byte[1024];
             int length;
@@ -75,6 +78,8 @@ public class ModelUtilities {
             inputTensor.close();
 
             results = formatResults(outputValues);
+
+            Log.d("OUTPUT", Arrays.toString(results));
         } catch (Exception e) {
             e.printStackTrace();
         }
