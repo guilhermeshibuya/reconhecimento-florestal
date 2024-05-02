@@ -23,13 +23,59 @@ import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtSession;
 import kotlin.jvm.internal.FloatSpreadBuilder;
 
-
 public class ModelUtilities {
     private Context mContext;
 
     public ModelUtilities(Context context) {
         mContext = context;
     }
+
+    String[] classes = {
+            "Acrocarpus fraxinifolius_ACROCARPUS",
+            "Apuleia leiocarpa_GARAPEIRA",
+            "Araucaria angustifolia_ARAUCARIA",
+            "Aspidosperma polyneuron_PEROBA ROSA",
+            "Aspidosperma sp_PAU CETIM",
+            "Bagassa guianensis_TATAJUBA",
+            "Balfourodendron riedelianum_PAU MARFIM",
+            "Bertholletia excelsa_CASTANHEIRA",
+            "Bertolethia excelsa_CASTANHEIRA",
+            "Bowdichia sp_SUCUPIRA",
+            "Brosimum paraensis_MUIRAPIRANGA",
+            "Carapa guianensis_ANDIROBA",
+            "Cariniana estrellensis_JEQUITIBA",
+            "Cedrela fissilis_CEDRO",
+            "Cedrelinga catenaeformis_CEDRORANA",
+            "Clarisia racemosa_GUARIUBA",
+            "Cordia Goeldiana_FREIJO",
+            "Cordia alliodora_LOURO-AMARELO",
+            "Couratari sp_TAUARI",
+            "Dipteryx sp_CUMARU",
+            "Erisma uncinatum_CEDRINHO",
+            "Eucalyptus sp_EUCALIPTO",
+            "Euxylophora paraensis_PAU AMARELO",
+            "Goupia glabra_CUPIUBA",
+            "Grevilea robusta_GREVILEA",
+            "Manilkara huberi_MASSARANDUBA",
+            "Hymenaea sp_JATOBA",
+            "Hymenolobium petraeum_ANGELIM PEDRA",
+            "Laurus nobilis_LOURO",
+            "Machaerium sp_MACHAERIUM",
+            "Melia azedarach_CINAMOMO",
+            "Mezilaurus itauba_ITAUBA",
+            "Micropholis venulosa_CURUPIXA",
+            "Myroxylon balsamum_CABREUVA VERMELHA",
+            "Mimosa scabrella_BRACATINGA",
+            "Ocotea porosa_IMBUIA",
+            "Peltagyne sp_ROXINHO",
+            "Pinus sp_PINUS",
+            "Podocarpus lambertii_PODOCARPUS",
+            "Pouteria pachycarpa_GOIABAO",
+            "Simarouba amara_MARUPA",
+            "Swietenia macrophylla_MOGNO",
+            "Virola surinamensis_VIROLA",
+            "Vochysia sp_QUARUBA CEDRO"
+    };
 
     public float[][][][] preprocessImages(Bitmap bitmap) {
         Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, 224, 224, true);
@@ -48,7 +94,7 @@ public class ModelUtilities {
     }
 
     public float[] runInference(float[][][][] inputArray) {
-        float[] results = null;
+        float[] results = new float[5];
         try {
             OrtEnvironment env = OrtEnvironment.getEnvironment();
             OrtSession.SessionOptions options = new OrtSession.SessionOptions();
@@ -74,10 +120,17 @@ public class ModelUtilities {
             OrtSession.Result output = session.run(Collections.singletonMap("images", inputTensor));
 
             float[][] outputValues = (float[][]) output.get(0).getValue();
+            int[] top5ind = getTop5Indices(outputValues[0]);
 
             inputTensor.close();
 
-            results = formatResults(outputValues);
+            for (int i = 0; i < 5; i++) {
+                int index = top5ind[i];
+                results[i] = outputValues[0][index];
+                Log.d("OUTPUTS", i + 1 +  ": " + classes[index] + " - " + results[i] * 100);
+            }
+
+//            results = formatResults(outputValues);
 
             Log.d("OUTPUT", Arrays.toString(results));
         } catch (Exception e) {
@@ -86,19 +139,18 @@ public class ModelUtilities {
         return results;
     }
 
-    private void quickSort(float[] arr, int start, int end) {
+    private void quickSort(float[] arr, int[] indices, int start, int end) {
         if (start < end) {
-            int pivot = partition(arr, start, end);
+            int pivotIndex = partition(arr, indices, start, end);
 
-            quickSort(arr, start, pivot - 1);
-            quickSort(arr ,pivot + 1, end);
+            quickSort(arr, indices, start, pivotIndex - 1);
+            quickSort(arr, indices, pivotIndex + 1, end);
         }
     }
 
-    private int partition(float[] arr, int start, int end)
-    {
+    private int partition(float[] arr, int[] indices, int start, int end) {
         float pivot = arr[end];
-        int i = (start - 1);
+        int i = start - 1;
 
         for (int j = start; j < end; j++) {
             if (arr[j] >= pivot) {
@@ -107,21 +159,72 @@ public class ModelUtilities {
                 float temp = arr[i];
                 arr[i] = arr[j];
                 arr[j] = temp;
+
+                int tempIndex = indices[i];
+                indices[i] = indices[j];
+                indices[j] = tempIndex;
             }
         }
+
         float temp = arr[i + 1];
         arr[i + 1] = arr[end];
         arr[end] = temp;
 
+        int tempIndex = indices[i + 1];
+        indices[i + 1] = indices[end];
+        indices[end] = tempIndex;
+
         return i + 1;
     }
+
+    private int[] getTop5Indices(float[] result) {
+        int[] indices = new int[result.length];
+        for (int i = 0; i < indices.length; i++) {
+            indices[i] = i;
+        }
+
+        float[] clone = result.clone();
+        quickSort(clone, indices, 0, clone.length - 1);
+
+        return Arrays.copyOfRange(indices, 0, 5);
+    }
+
+//    private void quickSort(float[] arr, int start, int end) {
+//        if (start < end) {
+//            int pivot = partition(arr, start, end);
+//
+//            quickSort(arr, start, pivot - 1);
+//            quickSort(arr ,pivot + 1, end);
+//        }
+//    }
+//
+//    private int partition(float[] arr, int start, int end)
+//    {
+//        float pivot = arr[end];
+//        int i = (start - 1);
+//
+//        for (int j = start; j < end; j++) {
+//            if (arr[j] >= pivot) {
+//                i++;
+//
+//                float temp = arr[i];
+//                arr[i] = arr[j];
+//                arr[j] = temp;
+//            }
+//        }
+//        float temp = arr[i + 1];
+//        arr[i + 1] = arr[end];
+//        arr[end] = temp;
+//
+//        return i + 1;
+//    }
 
     private float[] formatResults(float[][] output) {
         int n = 5;
         float[] clone = output[0].clone();
         float[] results = new float[n];
 
-        quickSort(clone, 0, clone.length - 1);
+//        quickSort(clone, 0, clone.length - 1);
 
 //        StringBuilder strBuilder = new StringBuilder();
 
