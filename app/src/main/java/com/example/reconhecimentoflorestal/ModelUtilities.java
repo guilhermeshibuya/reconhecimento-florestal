@@ -4,11 +4,14 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Debug;
+import android.util.Half;
 import android.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Collections;
@@ -20,6 +23,15 @@ import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtSession;
 import kotlin.jvm.internal.FloatSpreadBuilder;
 
+class InferenceResult {
+    public float[] results;
+    public int[] indices;
+
+    public InferenceResult(float[] results, int[] indices) {
+        this.results = results;
+        this.indices = indices;
+    }
+}
 
 public class ModelUtilities {
     private Context mContext;
@@ -44,18 +56,20 @@ public class ModelUtilities {
         return inputArray;
     }
 
-    public float[] runInference(float[][][][] inputArray) {
-        float[] results = null;
+    public InferenceResult runInference(float[][][][] inputArray) {
+        float[] results = new float[5];
+        int[] top5indices = new int[5];
+
         try {
             OrtEnvironment env = OrtEnvironment.getEnvironment();
             OrtSession.SessionOptions options = new OrtSession.SessionOptions();
 
             // Obtém o identificador do recurso raw do modelo ONNX
-            int resourceId = mContext.getResources().getIdentifier("model", "raw", mContext.getPackageName());
+            int resourceId = mContext.getResources().getIdentifier("best3", "raw", mContext.getPackageName());
 
             InputStream inputStream = mContext.getResources().openRawResource(resourceId);
 
-            File modelFile = new File(mContext.getCacheDir(), "model.onnx");
+            File modelFile = new File(mContext.getCacheDir(), "best3.onnx");
             FileOutputStream outputStream = new FileOutputStream(modelFile);
             byte[] buffer = new byte[1024];
             int length;
@@ -71,29 +85,35 @@ public class ModelUtilities {
             OrtSession.Result output = session.run(Collections.singletonMap("images", inputTensor));
 
             float[][] outputValues = (float[][]) output.get(0).getValue();
+            top5indices = getTop5Indices(outputValues[0]);
 
             inputTensor.close();
 
-            results = formatResults(outputValues);
+            for (int i = 0; i < 5; i++) {
+                int index = top5indices[i];
+                results[i] = outputValues[0][index];
+//                Log.d("OUTPUTS", i + 1 +  ": " + classes[index] + " - " + results[i] * 100);
+            }
+//            Log.d("OUTPUT", Arrays.toString(outputValues[0]));
+//            Log.d("INDICES OUTPUT", Arrays.toString(top5indices));
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return results;
+        return new InferenceResult(results, top5indices);
     }
 
-    private void quickSort(float[] arr, int start, int end) {
+    private void quickSort(float[] arr, int[] indices, int start, int end) {
         if (start < end) {
-            int pivot = partition(arr, start, end);
+            int pivotIndex = partition(arr, indices, start, end);
 
-            quickSort(arr, start, pivot - 1);
-            quickSort(arr ,pivot + 1, end);
+            quickSort(arr, indices, start, pivotIndex - 1);
+            quickSort(arr, indices, pivotIndex + 1, end);
         }
     }
 
-    private int partition(float[] arr, int start, int end)
-    {
+    private int partition(float[] arr, int[] indices, int start, int end) {
         float pivot = arr[end];
-        int i = (start - 1);
+        int i = start - 1;
 
         for (int j = start; j < end; j++) {
             if (arr[j] >= pivot) {
@@ -102,21 +122,72 @@ public class ModelUtilities {
                 float temp = arr[i];
                 arr[i] = arr[j];
                 arr[j] = temp;
+
+                int tempIndex = indices[i];
+                indices[i] = indices[j];
+                indices[j] = tempIndex;
             }
         }
+
         float temp = arr[i + 1];
         arr[i + 1] = arr[end];
         arr[end] = temp;
 
+        int tempIndex = indices[i + 1];
+        indices[i + 1] = indices[end];
+        indices[end] = tempIndex;
+
         return i + 1;
     }
+
+    private int[] getTop5Indices(float[] result) {
+        int[] indices = new int[result.length];
+        for (int i = 0; i < indices.length; i++) {
+            indices[i] = i;
+        }
+
+        float[] clone = result.clone();
+        quickSort(clone, indices, 0, clone.length - 1);
+
+        return Arrays.copyOfRange(indices, 0, 5);
+    }
+
+//    private void quickSort(float[] arr, int start, int end) {
+//        if (start < end) {
+//            int pivot = partition(arr, start, end);
+//
+//            quickSort(arr, start, pivot - 1);
+//            quickSort(arr ,pivot + 1, end);
+//        }
+//    }
+//
+//    private int partition(float[] arr, int start, int end)
+//    {
+//        float pivot = arr[end];
+//        int i = (start - 1);
+//
+//        for (int j = start; j < end; j++) {
+//            if (arr[j] >= pivot) {
+//                i++;
+//
+//                float temp = arr[i];
+//                arr[i] = arr[j];
+//                arr[j] = temp;
+//            }
+//        }
+//        float temp = arr[i + 1];
+//        arr[i + 1] = arr[end];
+//        arr[end] = temp;
+//
+//        return i + 1;
+//    }
 
     private float[] formatResults(float[][] output) {
         int n = 5;
         float[] clone = output[0].clone();
         float[] results = new float[n];
 
-        quickSort(clone, 0, clone.length - 1);
+//        quickSort(clone, 0, clone.length - 1);
 
 //        StringBuilder strBuilder = new StringBuilder();
 
