@@ -39,7 +39,7 @@ public class ModelUtilities {
     public ModelUtilities(Context context) {
         mContext = context;
     }
-    
+
     public float[][][][] preprocessImages(Bitmap bitmap) {
         Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, 224, 224, true);
         float[][][][] inputArray = new float[1][3][224][224]; // Batch size = 1
