@@ -16,6 +16,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.ViewModelProvider;
 
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -41,7 +42,8 @@ import java.util.List;
 
 public class HomeFragment extends Fragment implements View.OnClickListener{
     private ActivityMainBinding binding;
-
+    private MainActivity mainActivity;
+    private SharedViewModel viewModel;
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
 
@@ -64,6 +66,8 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+        mainActivity = (MainActivity) requireActivity();
         if (getArguments() != null) {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
@@ -147,14 +151,10 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
                     "Foto salva",
                     Toast.LENGTH_SHORT).show();
 
-            // NOVO CÓDIGO
-            ModelUtilities modelUtilities = new ModelUtilities(requireContext());
-
             Bitmap cropped = BitmapFactory.decodeFile(file.getAbsolutePath());
+            viewModel.setImage(cropped);
 
-            float[][][][] inputArray = modelUtilities.preprocessImages(cropped);
-
-            modelUtilities.runInference(inputArray);
+            switchToResultsFragment();
         } catch (Exception e) {
             Toast.makeText(
                     requireContext(),
@@ -195,5 +195,9 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
                         getImageFile();
                     }
                 });
+    }
+
+    private void switchToResultsFragment() {
+        mainActivity.switchToResultsFragment();
     }
 }
