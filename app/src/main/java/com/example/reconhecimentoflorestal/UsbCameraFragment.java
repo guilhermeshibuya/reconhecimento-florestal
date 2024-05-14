@@ -22,6 +22,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.canhub.cropper.CropImageContract;
 import com.canhub.cropper.CropImageContractOptions;
@@ -43,6 +44,9 @@ public class UsbCameraFragment extends Fragment implements View.OnClickListener 
 
     private ICameraHelper mCameraHelper;
     private AspectRatioSurfaceView mCameraViewMain;
+
+    private MainActivity mainActivity;
+    private SharedViewModel viewModel;
     ActivityResultLauncher<CropImageContractOptions> cropImage = registerForActivityResult(
             new CropImageContract(),
             result -> {
@@ -101,20 +105,23 @@ public class UsbCameraFragment extends Fragment implements View.OnClickListener 
                     "Foto salva",
                     Toast.LENGTH_SHORT).show();
 
-            // NOVO CÓDIGO
-            ModelUtilities modelUtilities = new ModelUtilities(getContext());
-
             Bitmap cropped = BitmapFactory.decodeFile(file.getAbsolutePath());
+            viewModel.setImage(cropped);
 
-            float[][][][] inputArray = modelUtilities.preprocessImages(cropped);
-
-            modelUtilities.runInference(inputArray);
+            switchToResultsFragment();
         } catch (Exception e) {
             Toast.makeText(
                     requireContext().getApplicationContext(),
                     "Erro ao salvar a imagem recortada",
                     Toast.LENGTH_SHORT).show();
         }
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+        mainActivity = (MainActivity) requireActivity();
     }
 
     @Nullable
@@ -180,8 +187,13 @@ public class UsbCameraFragment extends Fragment implements View.OnClickListener 
     }
 
     private void selectDevice(final UsbDevice device) {
-        Log.d("USB DEVICE", "DEVICE: " + device.getDeviceName());
-        mCameraHelper.selectDevice(device);
+        if (mCameraHelper != null) {
+            Log.d("USB DEVICE", "DEVICE: " + device.getDeviceName());
+            mCameraHelper.selectDevice(device);
+        } else {
+            Log.e("USB DEVICE", "mCameraHelpder is null");
+        }
+
     }
 
     private final ICameraHelper.StateCallback mStateListener = new ICameraHelper.StateCallback() {
@@ -249,6 +261,10 @@ public class UsbCameraFragment extends Fragment implements View.OnClickListener 
                 }
             });
         }
+    }
+
+    private void switchToResultsFragment() {
+        mainActivity.switchToResultsFragment();
     }
 
     @Override
