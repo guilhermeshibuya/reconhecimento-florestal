@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,6 +39,7 @@ import com.serenegiant.utils.FileUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -49,8 +51,10 @@ public class BackCameraFragment extends Fragment {
     private Camera camera;
     private ProcessCameraProvider cameraProvider;
     private boolean isTorchOn = false;
-    PreviewView previewView;
+    private PreviewView previewView;
     private SharedViewModel viewModel;
+    //
+    private BoundingBoxImageView boundingBoxImageView;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -66,6 +70,8 @@ public class BackCameraFragment extends Fragment {
         View view = inflater.inflate(R.layout.back_camera_fragment, container, false);
 
         previewView = view.findViewById(R.id.previewView);
+        //
+        boundingBoxImageView = view.findViewById(R.id.boundingBoxImageView);
 
         cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext());
         cameraProviderFuture.addListener(() -> {
@@ -126,8 +132,11 @@ public class BackCameraFragment extends Fragment {
                 new ImageCapture.OnImageSavedCallback() {
                     @Override
                     public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
-                        launchImageCropper(outputFileResults.getSavedUri());
+//                        launchImageCropper(outputFileResults.getSavedUri());
+//                        displayCapturedImage(outputFileResults.getSavedUri());
+                        saveImage2(outputFileResults.getSavedUri());
                     }
+
 
                     @Override
                     public void onError(@NonNull ImageCaptureException exception) {
@@ -174,6 +183,46 @@ public class BackCameraFragment extends Fragment {
         cropImage.launch(cropImageContractOptions);
     }
 
+    private void saveImage2(Uri uri) {
+        try {
+            Bitmap bitmap = MediaStore.Images.Media.getBitmap(requireContext().getContentResolver(), uri);
+
+            File file = FileUtils.getCaptureFile(
+                    requireContext(),
+                    Environment.DIRECTORY_DCIM,
+                    ".jpg");
+
+            OutputStream outputStream = new FileOutputStream(file);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+            outputStream.flush();
+            outputStream.close();
+
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Images.Media.DATA, file.getAbsolutePath());
+            values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpg");
+            requireContext().getApplicationContext().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+
+            MediaScannerConnection.scanFile(requireContext().getApplicationContext(), new String[]{ file.getAbsolutePath()}, null, null);
+
+            Toast.makeText(
+                    requireContext().getApplicationContext(),
+                    "Foto salva",
+                    Toast.LENGTH_SHORT).show();
+
+            displayCapturedImage(file.getAbsolutePath());
+
+//            viewModel.setImage(bitmap);
+
+//            switchToResultsFragment();
+        } catch (IOException e) {
+            Toast.makeText(
+                    requireContext().getApplicationContext(),
+                    "Erro ao salvar a imagem",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
     private void saveImage(Bitmap bitmap) {
         File file = FileUtils.getCaptureFile(
                 requireContext(),
@@ -217,6 +266,17 @@ public class BackCameraFragment extends Fragment {
                     requireContext().getApplicationContext(),
                     "Erro ao salvar a imagem recortada",
                     Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void displayCapturedImage(String imagePath) {
+        Bitmap bitmap = BitmapFactory.decodeFile(imagePath);
+        if (bitmap != null) {
+            Log.d("BackCameraFragment", "Imagem carregada com sucesso");
+            boundingBoxImageView.setImageBitmap(bitmap);
+            boundingBoxImageView.setVisibility(View.VISIBLE);
+        } else {
+            Toast.makeText(requireContext(), "Erro ao carregar a imagem", Toast.LENGTH_SHORT).show();
         }
     }
 
