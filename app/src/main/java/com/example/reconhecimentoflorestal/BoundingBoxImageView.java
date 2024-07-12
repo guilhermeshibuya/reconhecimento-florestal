@@ -12,7 +12,7 @@ import androidx.appcompat.widget.AppCompatImageView;
 
 public class BoundingBoxImageView extends AppCompatImageView {
     private Paint paint;
-    private RectF rect;
+    private RectF boundingBox;
     private float startX, startY;
 
     public BoundingBoxImageView(Context context) {
@@ -30,7 +30,7 @@ public class BoundingBoxImageView extends AppCompatImageView {
         paint.setColor(Color.RED);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(5);
-        rect = new RectF();
+        boundingBox = new RectF();
     }
 
     @Override
@@ -39,13 +39,13 @@ public class BoundingBoxImageView extends AppCompatImageView {
             case MotionEvent.ACTION_DOWN:
                 startX = event.getX();
                 startY = event.getY();
-                rect.set(startX, startY, startX, startY);
+                boundingBox.set(startX, startY, startX, startY);
                 invalidate();
                 return true;
             case MotionEvent.ACTION_MOVE:
                 float endX = event.getX();
                 float endY = event.getY();
-                rect.set(startX, startY, endX, endY);
+                boundingBox.set(startX, startY, endX, endY);
                 invalidate();
                 return true;
             case MotionEvent.ACTION_UP:
@@ -57,8 +57,17 @@ public class BoundingBoxImageView extends AppCompatImageView {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        if (rect != null) {
-            canvas.drawRect(rect, paint);
+        if (boundingBox != null) {
+            canvas.drawRect(boundingBox, paint);
         }
+    }
+
+    public void setBoundingBox(RectF rect) {
+        this.boundingBox = rect;
+        invalidate();
+    }
+
+    public RectF getBoundingBox() {
+        return this.boundingBox;
     }
 }

@@ -1,9 +1,13 @@
 package com.example.reconhecimentoflorestal;
 
+import android.annotation.SuppressLint;
 import android.content.ContentValues;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Matrix;
+import android.media.ExifInterface;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Bundle;
@@ -13,6 +17,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -55,6 +60,11 @@ public class BackCameraFragment extends Fragment {
     private SharedViewModel viewModel;
     //
     private BoundingBoxImageView boundingBoxImageView;
+    private String savedImagePath;
+
+    public String getSavedImagePath() {
+        return savedImagePath;
+    }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -134,7 +144,7 @@ public class BackCameraFragment extends Fragment {
                     public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
 //                        launchImageCropper(outputFileResults.getSavedUri());
 //                        displayCapturedImage(outputFileResults.getSavedUri());
-                        saveImage2(outputFileResults.getSavedUri());
+                        saveImage(outputFileResults.getSavedUri());
                     }
 
 
@@ -149,51 +159,17 @@ public class BackCameraFragment extends Fragment {
         );
     }
 
-    ActivityResultLauncher<CropImageContractOptions> cropImage = registerForActivityResult(
-            new CropImageContract(),
-            result -> {
-                if (result.isSuccessful()) {
-                    Bitmap cropped = BitmapFactory.decodeFile(result.getUriFilePath(requireContext().getApplicationContext(), true));
-                    saveImage(cropped);
-
-                    File tempFile = new File(requireContext().getCacheDir(), "temp.jpg");
-                    if (tempFile.exists()) {
-                        boolean deleted = tempFile.delete();
-                        if (!deleted) {
-                            Toast.makeText(requireContext(), "Erro ao excluir a imagem temporária", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                }
-            });
-
-    private void launchImageCropper(Uri uri) {
-        CropImageOptions cropImageOptions = new CropImageOptions();
-        cropImageOptions.imageSourceIncludeGallery = true;
-        cropImageOptions.imageSourceIncludeCamera = true;
-
-        cropImageOptions.autoZoomEnabled = true;
-
-        cropImageOptions.toolbarColor = Color.rgb(90, 194,121);
-        cropImageOptions.activityMenuTextColor = Color.rgb(0, 22,9);
-        cropImageOptions.toolbarBackButtonColor = Color.rgb(0, 22,9);
-        cropImageOptions.activityMenuIconColor = Color.rgb(0, 22,9);
-
-        CropImageContractOptions cropImageContractOptions = new CropImageContractOptions(uri, cropImageOptions);
-
-        cropImage.launch(cropImageContractOptions);
-    }
-
-    private void saveImage2(Uri uri) {
+    private void saveImage(Uri uri) {
         try {
             Bitmap bitmap = MediaStore.Images.Media.getBitmap(requireContext().getContentResolver(), uri);
-
+            Bitmap rotated = correctImageOrientation(bitmap, uri);
             File file = FileUtils.getCaptureFile(
                     requireContext(),
                     Environment.DIRECTORY_DCIM,
                     ".jpg");
 
             OutputStream outputStream = new FileOutputStream(file);
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+            rotated.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
             outputStream.flush();
             outputStream.close();
 
@@ -209,8 +185,17 @@ public class BackCameraFragment extends Fragment {
                     "Foto salva",
                     Toast.LENGTH_SHORT).show();
 
+            savedImagePath = file.getAbsolutePath();
+
             displayCapturedImage(file.getAbsolutePath());
 
+            File tempFile = new File(requireContext().getCacheDir(), "temp.jpg");
+            if (tempFile.exists()) {
+                boolean deleted = tempFile.delete();
+                if (!deleted) {
+                    Toast.makeText(requireContext(), "Erro ao excluir a imagem temporária", Toast.LENGTH_SHORT).show();
+                }
+            }
 //            viewModel.setImage(bitmap);
 
 //            switchToResultsFragment();
@@ -222,65 +207,47 @@ public class BackCameraFragment extends Fragment {
         }
     }
 
-
-    private void saveImage(Bitmap bitmap) {
-        File file = FileUtils.getCaptureFile(
-                requireContext(),
-                Environment.DIRECTORY_DCIM,
-                ".jpg");
-
-        try {
-            OutputStream outputStream = new FileOutputStream(file);
-
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
-            outputStream.flush();
-            outputStream.close();
-
-            ContentValues values = new ContentValues();
-            values.put(MediaStore.Images.Media.DATA, file.getAbsolutePath());
-            values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpg");
-            requireContext().getApplicationContext().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-
-            MediaScannerConnection.scanFile(requireContext().getApplicationContext(), new String[]{ file.getAbsolutePath()}, null, null);
-
-            Toast.makeText(
-                    requireContext().getApplicationContext(),
-                    "Foto salva",
-                    Toast.LENGTH_SHORT).show();
-
-            Bitmap cropped = BitmapFactory.decodeFile(file.getAbsolutePath());
-            viewModel.setImage(cropped);
-
-            switchToResultsFragment();
-
-            // NOVO CÓDIGO
-//            ModelUtilities modelUtilities = new ModelUtilities(getContext());
-
-//            Bitmap cropped = BitmapFactory.decodeFile(file.getAbsolutePath());
-
-//            float[][][][] inputArray = modelUtilities.preprocessImages(cropped);
-
-//            modelUtilities.runInference(inputArray);
-        } catch (Exception e) {
-            Toast.makeText(
-                    requireContext().getApplicationContext(),
-                    "Erro ao salvar a imagem recortada",
-                    Toast.LENGTH_SHORT).show();
-        }
-    }
-
     private void displayCapturedImage(String imagePath) {
         Bitmap bitmap = BitmapFactory.decodeFile(imagePath);
         if (bitmap != null) {
             Log.d("BackCameraFragment", "Imagem carregada com sucesso");
             boundingBoxImageView.setImageBitmap(bitmap);
             boundingBoxImageView.setVisibility(View.VISIBLE);
+
+            Button btnConfirmBoundingBox = getActivity().findViewById(R.id.btnConfirmBoundingBox);
+            btnConfirmBoundingBox.setVisibility(View.VISIBLE);
         } else {
             Toast.makeText(requireContext(), "Erro ao carregar a imagem", Toast.LENGTH_SHORT).show();
         }
     }
 
+    private Bitmap correctImageOrientation(Bitmap bitmap, Uri uri) throws IOException {
+        ExifInterface exif = new ExifInterface(requireContext().getContentResolver().openInputStream(uri));
+        int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
+
+        Matrix matrix = new Matrix();
+        switch (orientation) {
+            case ExifInterface.ORIENTATION_ROTATE_90:
+                matrix.postRotate(90);
+                break;
+            case ExifInterface.ORIENTATION_ROTATE_180:
+                matrix.postRotate(180);
+                break;
+            case ExifInterface.ORIENTATION_ROTATE_270:
+                matrix.postRotate(270);
+                break;
+            default:
+                return bitmap;
+        }
+
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+    }
+
     private void switchToResultsFragment() {
         mainActivity.switchToResultsFragment();
+    }
+
+    public BoundingBoxImageView getBoundingBoxImageView() {
+        return this.boundingBoxImageView;
     }
 }

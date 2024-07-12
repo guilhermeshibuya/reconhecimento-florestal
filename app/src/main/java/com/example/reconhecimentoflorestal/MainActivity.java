@@ -7,8 +7,11 @@ import androidx.fragment.app.FragmentTransaction;
 
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.example.reconhecimentoflorestal.databinding.ActivityMainBinding;
+
+import org.opencv.android.OpenCVLoader;
 
 public class MainActivity extends AppCompatActivity  {
     ActivityMainBinding binding;
@@ -17,6 +20,12 @@ public class MainActivity extends AppCompatActivity  {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (OpenCVLoader.initLocal()) {
+            Log.d("LOADED", "success");
+        } else {
+            Log.d("LOADED", "error");
+        }
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
