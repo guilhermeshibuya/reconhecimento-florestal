@@ -2,9 +2,6 @@ package com.example.reconhecimentoflorestal;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.util.Log;
 
 import org.opencv.android.Utils;
@@ -12,20 +9,22 @@ import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Scalar;
-import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
 
 import java.io.IOException;
-import java.nio.FloatBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 public class SAMImagePreprocessor {
     private static final float[] MEAN = {123.675f, 116.28f, 103.53f};
     private static final float[] STD = {58.395f, 57.12f, 57.375f};
 
-    public static float[][][] preprocessImage(String imagePath) throws IOException {
+    public static float[][][][] preprocessImage(String imagePath) throws IOException {
         Bitmap bitmap = BitmapFactory.decodeFile(imagePath);
+
+        if (bitmap == null) {
+            Log.e("SAMImagePreprocessor", "Bitmap is null for path: " + imagePath);
+            throw new IllegalArgumentException("Bitmap is null for path: " + imagePath);
+        }
 
         Bitmap rgbBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
 
@@ -49,27 +48,9 @@ public class SAMImagePreprocessor {
         Mat mat = new Mat(resizedHeight, resizedWidth, CvType.CV_8UC3);
         Utils.bitmapToMat(resizedBitmap, mat);
         Log.d("PREPROCESS", "Mat after bitmapToMat: " + mat.size().toString());
-
+        Imgproc.cvtColor(mat, mat, Imgproc.COLOR_RGBA2RGB);
         // Convert to Float and normalize
-        mat.convertTo(mat, CvType.CV_32FC4);
-
-        // Extrair apenas os canais RGB (ignorando o canal Alpha)
-        List<Mat> channelsList = new ArrayList<>();
-        Core.split(mat, channelsList);
-
-// Verificar se há quatro canais e descartar o Alpha se necessário
-        if (channelsList.size() == 4) {
-            channelsList.remove(3); // Remover o canal Alpha
-        }
-
-        Core.merge(channelsList, mat);
-
-//        Mat meanMat = new Mat(mat.size(), mat.type());
-//        Mat stdMat = new Mat(mat.size(), mat.type());
-
-//        Core.add(meanMat, new Scalar(MEAN[0], MEAN[1], MEAN[2]), meanMat);
-//        Core.add(stdMat, new Scalar(STD[0], STD[1], STD[2]), stdMat);
-//
+        mat.convertTo(mat, CvType.CV_32FC3);
 
         Core.subtract(mat, new Scalar(MEAN[0], MEAN[1], MEAN[2]), mat);
         Core.divide(mat, new Scalar(STD[0], STD[1], STD[2]), mat);
@@ -81,26 +62,28 @@ public class SAMImagePreprocessor {
         mat.get(0, 0, data);
 
         // Convert to 1x3xHxW
-        float[][][] inputTensor = new float[1024][1024][3];
+        float[][][][] inputTensor = new float[1][3][1024][1024];
         for (int i = 0; i < resizedHeight; i++) {
             for (int j = 0; j < resizedWidth; j++) {
                 for (int c = 0; c < 3; c++) {
-                    inputTensor[i][j][c] = data[i * resizedWidth * 3 + j * 3 + c];
+                    inputTensor[0][c][i][j] = data[i * resizedWidth * 3 + j * 3 + c];
                 }
             }
         }
 
         // Pad with zeros
         if (resizedHeight < 1024) {
-            for (int i = resizedHeight; i < 1024; i++) {
-                for (int j = 0; j < 1024; j++) {
-                    Arrays.fill(inputTensor[i][j], 0);
+            for (int c = 0; c < 3; c++) {
+                for (int j = resizedHeight; j < 1024; j++) {
+                    Arrays.fill(inputTensor[0][c][j], 0);
                 }
             }
         } else if (resizedWidth < 1024) {
-            for (int i = 0; i < 1024; i++) {
-                for (int j = resizedWidth; j < 1024; j++) {
-                    Arrays.fill(inputTensor[i][j], 0);
+            for (int c = 0; c < 3; c++) {
+                for (int i = resizedWidth; i < 1024; i++) {
+                    for (int j = 0; j < 1024; j++) {
+                        inputTensor[0][c][j][i] = 0;
+                    }
                 }
             }
         }
@@ -108,3 +91,4 @@ public class SAMImagePreprocessor {
         return inputTensor;
     }
 }
+

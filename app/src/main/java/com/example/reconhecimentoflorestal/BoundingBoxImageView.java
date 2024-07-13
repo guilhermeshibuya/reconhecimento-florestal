@@ -45,7 +45,7 @@ public class BoundingBoxImageView extends AppCompatImageView {
             case MotionEvent.ACTION_MOVE:
                 float endX = event.getX();
                 float endY = event.getY();
-                boundingBox.set(startX, startY, endX, endY);
+                boundingBox.set(Math.min(startX, endX), Math.min(startY, endY), Math.max(startX, endX), Math.max(startY, endY));
                 invalidate();
                 return true;
             case MotionEvent.ACTION_UP:

@@ -65,11 +65,11 @@ public class ModelUtilities {
             OrtSession.SessionOptions options = new OrtSession.SessionOptions();
 
             // Obtém o identificador do recurso raw do modelo ONNX
-            int resourceId = mContext.getResources().getIdentifier("best3", "raw", mContext.getPackageName());
+            int resourceId = mContext.getResources().getIdentifier("best_30_06_2024", "raw", mContext.getPackageName());
 
             InputStream inputStream = mContext.getResources().openRawResource(resourceId);
 
-            File modelFile = new File(mContext.getCacheDir(), "best3.onnx");
+            File modelFile = new File(mContext.getCacheDir(), "best_30_06_2024.onnx");
             FileOutputStream outputStream = new FileOutputStream(modelFile);
             byte[] buffer = new byte[1024];
             int length;

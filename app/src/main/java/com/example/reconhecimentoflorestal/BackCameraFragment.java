@@ -33,6 +33,7 @@ import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -58,13 +59,7 @@ public class BackCameraFragment extends Fragment {
     private boolean isTorchOn = false;
     private PreviewView previewView;
     private SharedViewModel viewModel;
-    //
     private BoundingBoxImageView boundingBoxImageView;
-    private String savedImagePath;
-
-    public String getSavedImagePath() {
-        return savedImagePath;
-    }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -80,7 +75,7 @@ public class BackCameraFragment extends Fragment {
         View view = inflater.inflate(R.layout.back_camera_fragment, container, false);
 
         previewView = view.findViewById(R.id.previewView);
-        //
+
         boundingBoxImageView = view.findViewById(R.id.boundingBoxImageView);
 
         cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext());
@@ -142,11 +137,8 @@ public class BackCameraFragment extends Fragment {
                 new ImageCapture.OnImageSavedCallback() {
                     @Override
                     public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
-//                        launchImageCropper(outputFileResults.getSavedUri());
-//                        displayCapturedImage(outputFileResults.getSavedUri());
                         saveImage(outputFileResults.getSavedUri());
                     }
-
 
                     @Override
                     public void onError(@NonNull ImageCaptureException exception) {
@@ -185,9 +177,7 @@ public class BackCameraFragment extends Fragment {
                     "Foto salva",
                     Toast.LENGTH_SHORT).show();
 
-            savedImagePath = file.getAbsolutePath();
-
-            displayCapturedImage(file.getAbsolutePath());
+            showBoundingBoxView(Uri.fromFile(file));
 
             File tempFile = new File(requireContext().getCacheDir(), "temp.jpg");
             if (tempFile.exists()) {
@@ -196,9 +186,6 @@ public class BackCameraFragment extends Fragment {
                     Toast.makeText(requireContext(), "Erro ao excluir a imagem temporária", Toast.LENGTH_SHORT).show();
                 }
             }
-//            viewModel.setImage(bitmap);
-
-//            switchToResultsFragment();
         } catch (IOException e) {
             Toast.makeText(
                     requireContext().getApplicationContext(),
@@ -207,18 +194,15 @@ public class BackCameraFragment extends Fragment {
         }
     }
 
-    private void displayCapturedImage(String imagePath) {
-        Bitmap bitmap = BitmapFactory.decodeFile(imagePath);
-        if (bitmap != null) {
-            Log.d("BackCameraFragment", "Imagem carregada com sucesso");
-            boundingBoxImageView.setImageBitmap(bitmap);
-            boundingBoxImageView.setVisibility(View.VISIBLE);
+    private void showBoundingBoxView(Uri uri) {
+        FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
 
-            Button btnConfirmBoundingBox = getActivity().findViewById(R.id.btnConfirmBoundingBox);
-            btnConfirmBoundingBox.setVisibility(View.VISIBLE);
-        } else {
-            Toast.makeText(requireContext(), "Erro ao carregar a imagem", Toast.LENGTH_SHORT).show();
-        }
+        BoundingBoxFragment boundingBoxFragment = BoundingBoxFragment.newInstance(uri);
+
+        fragmentTransaction.replace(R.id.frameLayout, boundingBoxFragment);
+        fragmentTransaction.addToBackStack(null);
+        fragmentTransaction.commit();
     }
 
     private Bitmap correctImageOrientation(Bitmap bitmap, Uri uri) throws IOException {

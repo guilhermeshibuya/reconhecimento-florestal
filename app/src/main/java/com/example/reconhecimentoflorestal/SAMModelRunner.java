@@ -18,23 +18,20 @@ public class SAMModelRunner {
         env = OrtEnvironment.getEnvironment();
         OrtSession.SessionOptions options = new OrtSession.SessionOptions();
 
-        // Carregar o modelo encoder
-//        InputStream encoderStream = context.getAssets().open("vit_b_encoder.onnx");
-        InputStream encoderStream = context.getResources().openRawResource(R.raw.mobile_sam_encoder);
+        InputStream encoderStream = context.getResources().openRawResource(R.raw.mobile_sam_tuned_encoder);
         byte[] encoderBytes = new byte[encoderStream.available()];
         encoderStream.read(encoderBytes);
         encoderSession = env.createSession(encoderBytes, options);
 
-        // Carregar o modelo decoder
-        InputStream decoderStream = context.getResources().openRawResource(R.raw.vit_b_decoder);
+        InputStream decoderStream = context.getResources().openRawResource(R.raw.mobile_sam_tuned_decoder);
         byte[] decoderBytes = new byte[decoderStream.available()];
         decoderStream.read(decoderBytes);
         decoderSession = env.createSession(decoderBytes, options);
     }
 
-    public float[][][][] generateEmbeddings(float[][][] inputTensor) throws OrtException {
+    public float[][][][] generateEmbeddings(float[][][][] inputTensor) throws OrtException {
         OnnxTensor inputOnnxTensor = OnnxTensor.createTensor(env, inputTensor);
-        OrtSession.Result encoderResult = encoderSession.run(Collections.singletonMap("input_image", inputOnnxTensor));
+        OrtSession.Result encoderResult = encoderSession.run(Collections.singletonMap("images", inputOnnxTensor));
         return (float[][][][]) encoderResult.get(0).getValue();
     }
 
@@ -47,7 +44,7 @@ public class SAMModelRunner {
         onnxCoord[0][1][0] = boundingBox[2] * (resizedWidth / (float)origWidth);
         onnxCoord[0][1][1] = boundingBox[3] * (resizedHeight / (float)origHeight);
         Log.d("BBOX CONVERTIDO", Arrays.deepToString(onnxCoord));
-        /*onnxLabel[0] = inputLabels[0];*/
+
         for (int i = 0; i < onnxLabel.length; i++) {
             onnxLabel[0][i] = inputLabels[i];
         }
@@ -81,8 +78,6 @@ public class SAMModelRunner {
             }
         }
 
-        Log.d("MASK ", "" + mask2[0].length);
-        Log.d("MASK ", "" + mask2[0][0].length);
         return mask2;
     }
 }

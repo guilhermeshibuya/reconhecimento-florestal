@@ -61,7 +61,6 @@ dependencies {
     implementation("com.vanniktech:android-image-cropper:4.5.0")
     implementation("com.microsoft.onnxruntime:onnxruntime-android:latest.release")
     implementation("org.opencv:opencv:4.9.0")
-    implementation("org.tensorflow:tensorflow-lite:2.5.0")
 
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 }
