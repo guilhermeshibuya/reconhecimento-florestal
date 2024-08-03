@@ -7,6 +7,12 @@ import android.os.Debug;
 import android.util.Half;
 import android.util.Log;
 
+import org.opencv.android.Utils;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -41,19 +47,36 @@ public class ModelUtilities {
     }
 
     public float[][][][] preprocessImages(Bitmap bitmap) {
-        Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, 224, 224, true);
-        float[][][][] inputArray = new float[1][3][224][224]; // Batch size = 1
+        Mat mat = new Mat();
+        Utils.bitmapToMat(bitmap, mat);
+        Imgproc.resize(mat, mat, new Size(224, 224), 0, 0, Imgproc.INTER_CUBIC);
 
-        // Converte a imagem em um array de float
+        mat.convertTo(mat, CvType.CV_32FC3, 1.0 / 255.0);
+
+        float[][][][] outputArray = new float[1][3][224][224];
+
         for (int y = 0; y < 224; y++) {
             for (int x = 0; x < 224; x++) {
-                int pixel = resizedBitmap.getPixel(x, y);
-                inputArray[0][0][y][x] = Color.red(pixel) / 255.0f;
-                inputArray[0][1][y][x] = Color.green(pixel) / 255.0f;
-                inputArray[0][2][y][x] = Color.blue(pixel) / 255.0f;
+                double[] pixel = mat.get(y, x);
+                outputArray[0][0][y][x] = (float) pixel[2];
+                outputArray[0][1][y][x] = (float) pixel[1];
+                outputArray[0][2][y][x] = (float) pixel[0];
             }
         }
-        return inputArray;
+        return outputArray;
+//        Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, 224, 224, true);
+//        float[][][][] inputArray = new float[1][3][224][224]; // Batch size = 1
+//
+//        // Converte a imagem em um array de float
+//        for (int y = 0; y < 224; y++) {
+//            for (int x = 0; x < 224; x++) {
+//                int pixel = resizedBitmap.getPixel(x, y);
+//                inputArray[0][0][y][x] = Color.red(pixel) / 255.0f;
+//                inputArray[0][1][y][x] = Color.green(pixel) / 255.0f;
+//                inputArray[0][2][y][x] = Color.blue(pixel) / 255.0f;
+//            }
+//        }
+//        return inputArray;
     }
 
     public InferenceResult runInference(float[][][][] inputArray) {
@@ -151,36 +174,6 @@ public class ModelUtilities {
 
         return Arrays.copyOfRange(indices, 0, 5);
     }
-
-//    private void quickSort(float[] arr, int start, int end) {
-//        if (start < end) {
-//            int pivot = partition(arr, start, end);
-//
-//            quickSort(arr, start, pivot - 1);
-//            quickSort(arr ,pivot + 1, end);
-//        }
-//    }
-//
-//    private int partition(float[] arr, int start, int end)
-//    {
-//        float pivot = arr[end];
-//        int i = (start - 1);
-//
-//        for (int j = start; j < end; j++) {
-//            if (arr[j] >= pivot) {
-//                i++;
-//
-//                float temp = arr[i];
-//                arr[i] = arr[j];
-//                arr[j] = temp;
-//            }
-//        }
-//        float temp = arr[i + 1];
-//        arr[i + 1] = arr[end];
-//        arr[end] = temp;
-//
-//        return i + 1;
-//    }
 
     private float[] formatResults(float[][] output) {
         int n = 5;

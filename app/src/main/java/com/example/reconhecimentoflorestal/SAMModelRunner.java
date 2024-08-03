@@ -5,6 +5,8 @@ import android.util.Log;
 
 import ai.onnxruntime.*;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -32,7 +34,48 @@ public class SAMModelRunner {
     public float[][][][] generateEmbeddings(float[][][][] inputTensor) throws OrtException {
         OnnxTensor inputOnnxTensor = OnnxTensor.createTensor(env, inputTensor);
         OrtSession.Result encoderResult = encoderSession.run(Collections.singletonMap("images", inputOnnxTensor));
-        return (float[][][][]) encoderResult.get(0).getValue();
+        float[][][][] embeddings = (float[][][][]) encoderResult.get(0).getValue();
+        /*
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        for (int i = 0; i < embeddings.length; i++) {
+            sb.append("[");
+            for (int j = 0; j < embeddings[i].length; j++) {
+                sb.append("[");
+                for (int k = 0; k < embeddings[i][j].length; k++) {
+                    sb.append("[");
+                    for (int l = 0; l < embeddings[i][j][k].length; l++) {
+                        sb.append(embeddings[i][j][k][l]);
+                        if (l < embeddings[i][j][k].length - 1) {
+                            sb.append(", ");
+                        }
+                    }
+                    sb.append("]");
+                    if (k < embeddings[i][j].length - 1) {
+                        sb.append(", ");
+                    }
+                }
+                sb.append("]");
+                if (j < embeddings[i].length - 1) {
+                    sb.append(", ");
+                }
+            }
+            sb.append("]");
+            if (i < embeddings.length - 1) {
+                sb.append(", ");
+            }
+        }
+        sb.append("]");
+
+        // Save the embeddings string to a file
+        try (FileWriter writer = new FileWriter("/storage/emulated/0/Download/embeddings.txt")) {
+            writer.write(sb.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+         */
+
+        return embeddings;
     }
 
     public float[][][] runDecoder(float[][][][] embeddings, float[] boundingBox, int[] inputLabels, int origWidth, int origHeight, int resizedWidth, int resizedHeight) throws OrtException {
@@ -67,17 +110,16 @@ public class SAMModelRunner {
         int height = masks[0][0].length;
         int width = masks[0][0][0].length;
 
-        float[][][] mask2 = new float[channels][height][width];
+        float[][][] mask = new float[channels][height][width];
 
-        // Copia os valores do array masks para mask2
         for (int c = 0; c < channels; c++) {
             for (int i = 0; i < height; i++) {
                 for (int j = 0; j < width; j++) {
-                    mask2[c][i][j] = masks[0][c][i][j];
+                    mask[c][i][j] = masks[0][c][i][j];
                 }
             }
         }
 
-        return mask2;
+        return mask;
     }
 }

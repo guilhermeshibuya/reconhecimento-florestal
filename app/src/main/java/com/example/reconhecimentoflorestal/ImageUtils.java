@@ -33,4 +33,35 @@ public class ImageUtils {
 
         return bitmap;
     }
+
+    public static int[] findLargestSquare(int[][] mask) {
+        int rows = mask.length;
+        int cols = mask[0].length;
+        int[] dp = new int[cols + 1];
+        int maxSize = 0;
+        int maxI = 0, maxJ = 0;
+
+        for (int i = 0; i < rows; i++) {
+            int prev = 0;
+            for (int j = 1; j <= cols; j++) {
+                int temp = dp[j];
+                if (mask[i][j - 1] == 1) {
+                    dp[j] = Math.min(prev, Math.min(dp[j], dp[j - 1])) + 1;
+                    if (dp[j] > maxSize) {
+                        maxSize = dp[j];
+                        maxI = i;
+                        maxJ = j - 1;
+                    }
+                } else {
+                    dp[j] = 0;
+                }
+                prev = temp;
+            }
+        }
+
+        int topLeftX = maxJ - maxSize + 1;
+        int topLeftY = maxI - maxSize + 1;
+
+        return new int[]{topLeftX, topLeftY, maxSize};
+    }
 }

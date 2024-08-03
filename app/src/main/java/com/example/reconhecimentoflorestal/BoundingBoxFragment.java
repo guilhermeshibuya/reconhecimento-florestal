@@ -1,5 +1,6 @@
 package com.example.reconhecimentoflorestal;
 
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -10,11 +11,13 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -65,9 +68,11 @@ public class BoundingBoxFragment extends Fragment {
 
         if (imageUri != null) {
             try {
-//                bitmap = BitmapFactory.decodeStream(requireContext().getContentResolver().openInputStream(imageUri));
                 String path = getImagePath(imageUri);
                 bitmap = ImageUtils.getCorrectlyOrientedBitmap(path);
+
+                adjustImageViewDimensions(boundingBoxImageView, bitmap);
+
                 boundingBoxImageView.setImageBitmap(bitmap);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -78,7 +83,7 @@ public class BoundingBoxFragment extends Fragment {
 
         Button btnConfirmBoundingBox = view.findViewById(R.id.btnConfirmBbox);
         btnConfirmBoundingBox.setOnClickListener(v -> {
-            confirmBoundingBox();
+            confirmBoundingBox(bitmap);
         });
 
         return view;
@@ -101,7 +106,7 @@ public class BoundingBoxFragment extends Fragment {
         return null;
     }
 
-    private void confirmBoundingBox() {
+    private void confirmBoundingBox(Bitmap bitmap) {
         if (bitmap == null) {
             Log.e("BoundingBoxFragment", "Bitmap is null");
             return;
@@ -110,72 +115,93 @@ public class BoundingBoxFragment extends Fragment {
         RectF boundingBox = boundingBoxImageView.getBoundingBox();
         Log.d("BBOX", boundingBox.toString());
 
-        String imagePath = getImagePath(imageUri);
-
-        if (imagePath == null) {;
-            Log.e("ERRO CONFIRM BOUNDING BOX", "Caminho é nulo");
-            return;
-        }
-
         try {
-            BitmapFactory.Options options = new BitmapFactory.Options();
-            options.inJustDecodeBounds = true;
-            BitmapFactory.decodeFile(imagePath, options);
+            int origWidth = bitmap.getWidth();
+            int origHeight = bitmap.getHeight();
 
-            int origWidth = options.outWidth;
-            int origHeight = options.outHeight;
+//            float[][][][] inputTensor = SAMImagePreprocessor.preprocessImage(getContext().getApplicationContext(), bitmap);
 
-            Log.d("Orig width e height", origWidth + " x " + origHeight);
+            SAMPreprocessingResult results = SAMImagePreprocessor.preprocessImage(getContext().getApplicationContext(), bitmap);
+            float[][][][] inputTensor = results.getTensor();
 
-            float[][][][] inputTensor = SAMImagePreprocessor.preprocessImage(imagePath);
             float[][][][] embeddings = sam.generateEmbeddings(inputTensor);
             Log.d("TENSOR", "Tensor preprocessado: " + Arrays.deepToString(inputTensor));
 
-//            float[] boundingBoxArray = {
-//                    boundingBox.left * (origWidth / (float) boundingBoxImageView.getWidth()),
-//                    boundingBox.top * (origHeight / (float) boundingBoxImageView.getHeight()),
-//                    boundingBox.right * (origWidth / (float) boundingBoxImageView.getWidth()),
-//                    boundingBox.bottom * (origHeight / (float) boundingBoxImageView.getHeight())
-//            };
-
-            float widthScale = (float) origWidth / boundingBoxImageView.getWidth();
-            float heightScale = (float) origHeight / boundingBoxImageView.getHeight();
-
+            Log.d("BBOX Image View", "Size: " + boundingBoxImageView.getWidth() + ", " + boundingBoxImageView.getHeight());
             float[] boundingBoxArray = {
-                    Math.min(boundingBox.left * widthScale, origWidth - 1),
-                    Math.min(boundingBox.top * heightScale, origHeight - 1),
-                    Math.min(boundingBox.right * widthScale, origWidth - 1),
-                    Math.min(boundingBox.bottom * heightScale, origHeight - 1)
+                    boundingBox.left * (origWidth / (float) boundingBoxImageView.getWidth()),
+                    boundingBox.top * (origHeight / (float) boundingBoxImageView.getHeight()),
+                    boundingBox.right * (origWidth / (float) boundingBoxImageView.getWidth()),
+                    boundingBox.bottom * (origHeight / (float) boundingBoxImageView.getHeight())
             };
-
             Log.d("BBOX ARRAY", Arrays.toString(boundingBoxArray));
 
             int[] inputLabels = {2, 3};
 
-            int resizedWidth = 1024;
-            int resizedHeight = 1024;
+            int resizedWidth = results.getResizedWidth();
+            int resizedHeight = results.getResizedHeight();
 
-            float[][][] masks = sam.runDecoder(embeddings, boundingBoxArray, inputLabels, origWidth, origHeight, resizedWidth, resizedHeight);
+            Log.d("resizedWidth", ""+ resizedWidth);
 
-            saveMaskAsImage(masks);
+            float[][][] mask = sam.runDecoder(embeddings, boundingBoxArray, inputLabels, origWidth, origHeight, resizedWidth, resizedHeight);
+
+            saveMaskAsImage(mask);
+
+//            int[][] intMask = new int[mask[0].length][mask[0][0].length];
+//            for (int i = 0; i < mask[0].length; i++) {
+//                for (int j = 0; j < mask[0][0].length; j++) {
+//                    intMask[i][j] = mask[0][i][j] > 0.5 ? 1 : 0;
+//                }
+//            }
+
+//            Bitmap segmentedBitmap = generateSegmentedArea(bitmap, intMask);
+//
+//            File segmentedImg = saveBitmap(segmentedBitmap);
+//            addToGallery(segmentedImg);
         } catch(IOException | OrtException e) {
             Log.e("ERRO SAM", e.toString());
         }
     }
 
+    private Bitmap generateSegmentedArea(Bitmap bitmap, int[][] mask) {
+        int[] largestSquare = ImageUtils.findLargestSquare(mask);
+        int x = largestSquare[0];
+        int y = largestSquare[1];
+        int size = largestSquare[2];
+
+        Bitmap segmentedBitmap = Bitmap.createBitmap(bitmap, x, y, size, size);
+
+        return segmentedBitmap;
+    }
+
+    private void adjustImageViewDimensions(ImageView imageView, Bitmap bitmap) {
+        // Obtenha a largura da tela
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        int screenWidth = displayMetrics.widthPixels;
+
+        // Calcule a proporção do Bitmap
+        int bitmapWidth = bitmap.getWidth();
+        int bitmapHeight = bitmap.getHeight();
+        float aspectRatio = (float) bitmapHeight / bitmapWidth;
+
+        // Defina a largura do ImageView como a largura da tela
+        // e a altura do ImageView proporcionalmente à altura do Bitmap
+        ViewGroup.LayoutParams layoutParams = imageView.getLayoutParams();
+        layoutParams.width = screenWidth;
+        layoutParams.height = (int) (screenWidth * aspectRatio);
+        imageView.setLayoutParams(layoutParams);
+    }
+
     private void saveMaskAsImage(float[][][] masks) {
-        // Converter a máscara float[][][] para um bitmap
         Bitmap maskBitmap = masksToBitmap(masks);
 
-        // Salvar o bitmap como arquivo de imagem
         File maskFile = saveBitmap(maskBitmap);
 
-        // Adicionar a imagem à galeria
         addToGallery(maskFile);
     }
 
     private Bitmap masksToBitmap(float[][][] masks) {
-        // Lógica para converter a máscara float[][][] para um Bitmap
         int height = masks[0].length;
         int width = masks[0][0].length;
 
@@ -192,17 +218,14 @@ public class BoundingBoxFragment extends Fragment {
     }
 
     private File saveBitmap(Bitmap bitmap) {
-        // Salvar o bitmap como arquivo
-//        File file = new File(requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "mask_image.jpg");
         File file = FileUtils.getCaptureFile(
                 requireContext(),
                 Environment.DIRECTORY_DCIM,
                 ".jpg");
         try {
             OutputStream outputStream = new FileOutputStream(file);
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
             outputStream.close();
-//            Toast.makeText(getContext(), "Máscara salva em: " + file.getAbsolutePath(), Toast.LENGTH_SHORT).show();
             Log.d("MASCARA", file.getAbsolutePath());
             return file;
         } catch (IOException e) {
@@ -213,11 +236,9 @@ public class BoundingBoxFragment extends Fragment {
     }
 
     private void addToGallery(File file) {
-        // Adicionar a imagem à galeria
         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
         Uri contentUri = Uri.fromFile(file);
         mediaScanIntent.setData(contentUri);
         requireContext().sendBroadcast(mediaScanIntent);
     }
-
 }

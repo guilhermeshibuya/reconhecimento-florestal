@@ -205,6 +205,7 @@ public class BackCameraFragment extends Fragment {
         fragmentTransaction.commit();
     }
 
+
     private Bitmap correctImageOrientation(Bitmap bitmap, Uri uri) throws IOException {
         ExifInterface exif = new ExifInterface(requireContext().getContentResolver().openInputStream(uri));
         int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);

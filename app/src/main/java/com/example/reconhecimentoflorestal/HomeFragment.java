@@ -7,6 +7,8 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Matrix;
+import android.media.ExifInterface;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Bundle;
@@ -35,6 +37,7 @@ import com.serenegiant.utils.FileUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -93,6 +96,63 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
             }
         }
     });
+
+    /*
+    ActivityResultLauncher<Intent> getImage = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+        if (result.getResultCode() == Activity.RESULT_OK) {
+            Intent data = result.getData();
+            if (data != null && data.getData() != null) {
+                Uri imageUri = data.getData();
+                try {
+                    Bitmap bitmap = MediaStore.Images.Media.getBitmap(requireContext().getContentResolver(), imageUri);
+                    Bitmap rotated = correctImageOrientation(bitmap, imageUri);
+                    showBoundingBoxView(rotated);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    Toast.makeText(requireContext().getApplicationContext(), "Erro ao carregar a imagem", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+    });
+
+     */
+
+    private Bitmap correctImageOrientation(Bitmap bitmap, Uri uri) throws IOException {
+        ExifInterface exif = new ExifInterface(requireContext().getContentResolver().openInputStream(uri));
+        int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
+
+        Matrix matrix = new Matrix();
+        switch (orientation) {
+            case ExifInterface.ORIENTATION_ROTATE_90:
+                matrix.postRotate(90);
+                break;
+            case ExifInterface.ORIENTATION_ROTATE_180:
+                matrix.postRotate(180);
+                break;
+            case ExifInterface.ORIENTATION_ROTATE_270:
+                matrix.postRotate(270);
+                break;
+            default:
+                return bitmap;
+        }
+
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+    }
+
+    /*
+    private void showBoundingBoxView(Bitmap bitmap) {
+        FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+
+        BoundingBoxFragment boundingBoxFragment = BoundingBoxFragment.newInstance(bitmap);
+
+        fragmentTransaction.replace(R.id.frameLayout, boundingBoxFragment);
+        fragmentTransaction.addToBackStack(null);
+        fragmentTransaction.commit();
+    }
+
+     */
+
 
     private void showBoundingBoxView(Uri uri) {
         FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
