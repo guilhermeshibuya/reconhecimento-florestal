@@ -7,6 +7,7 @@ import androidx.fragment.app.FragmentTransaction;
 
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.example.reconhecimentoflorestal.databinding.ActivityMainBinding;
 
