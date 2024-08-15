@@ -119,8 +119,6 @@ public class BoundingBoxFragment extends Fragment {
             int origWidth = bitmap.getWidth();
             int origHeight = bitmap.getHeight();
 
-//            float[][][][] inputTensor = SAMImagePreprocessor.preprocessImage(getContext().getApplicationContext(), bitmap);
-
             SAMPreprocessingResult results = SAMImagePreprocessor.preprocessImage(getContext().getApplicationContext(), bitmap);
             float[][][][] inputTensor = results.getTensor();
 
@@ -221,10 +219,10 @@ public class BoundingBoxFragment extends Fragment {
         File file = FileUtils.getCaptureFile(
                 requireContext(),
                 Environment.DIRECTORY_DCIM,
-                ".jpg");
+                ".png");
         try {
             OutputStream outputStream = new FileOutputStream(file);
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
             outputStream.close();
             Log.d("MASCARA", file.getAbsolutePath());
             return file;
