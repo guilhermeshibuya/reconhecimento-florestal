@@ -34,6 +34,9 @@ public class MainActivity extends AppCompatActivity  {
 
             return true;
         });
+
+//        ImageTestAutomation test = new ImageTestAutomation(this);
+//        test.run();
     }
 
     private void replaceFragment(Fragment fragment) {

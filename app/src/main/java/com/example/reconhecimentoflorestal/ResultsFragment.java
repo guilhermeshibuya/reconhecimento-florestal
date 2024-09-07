@@ -48,7 +48,50 @@ public class ResultsFragment extends Fragment {
     private BarChart hBarChart;
     private TextView speciesNamesText;
     private String[] classes = {
-            "Acrocarpus fraxinifolius_ACROCARPUS", "Apuleia leiocarpa_GARAPEIRA", "Araucaria angustifolia_ARAUCARIA", "Aspidosperma polyneuron_PEROBA ROSA", "Aspidosperma sp_PAU CETIM", "Bagassa guianensis_TATAJUBA", "Balfourodendron riedelianum_PAU MARFIM", "Bertholletia excelsa_CASTANHEIRA", "Bowdichia sp_SUCUPIRA", "Brosimum paraensis_MUIRAPIRANGA", "Carapa guianensis_ANDIROBA", "Cariniana estrellensis_JEQUITIBA", "Cedrela fissilis_CEDRO", "Cedrelinga catenaeformis_CEDRORANA", "Clarisia racemosa_GUARIUBA", "Cordia Goeldiana_FREIJO", "Cordia alliodora_LOURO-AMARELO", "Couratari sp_TAUARI", "Dipteryx sp_CUMARU", "Erisma uncinatum_CEDRINHO", "Eucalyptus sp_EUCALIPTO", "Euxylophora paraensis_PAU AMARELO", "Goupia glabra_CUPIUBA", "Grevilea robusta_GREVILEA", "Handroanthus sp_IPE", "Hymenaea sp_JATOBA", "Hymenolobium petraeum_ANGELIM PEDRA", "Laurus nobilis_LOURO", "Machaerium sp_MACHAERIUM", "Manilkara huberi_MASSARANDUBA", "Melia azedarach_CINAMOMO", "Mezilaurus itauba_ITAUBA", "Micropholis venulosa_CURUPIXA", "Mimosa scabrella_BRACATINGA", "Myroxylon balsamum_CABREUVA VERMELHA", "Ocotea porosa_IMBUIA", "Peltagyne sp_ROXINHO", "Pinus sp_PINUS", "Podocarpus lambertii_PODOCARPUS", "Pouteria pachycarpa_GOIABAO", "Simarouba amara_MARUPA", "Swietenia macrophylla_MOGNO", "Virola surinamensis_VIROLA", "Vochysia sp_QUARUBA CEDRO"
+            "Acrocarpus fraxinifolius_ACROCARPUS",
+            "Apuleia leiocarpa_GARAPEIRA",
+            "Araucaria angustifolia_ARAUCARIA",
+            "Aspidosperma polyneuron_PEROBA ROSA",
+            "Aspidosperma sp_PAU CETIM",
+            "Bagassa guianensis_TATAJUBA",
+            "Balfourodendron riedelianum_PAU MARFIM",
+            "Bertholletia excelsa_CASTANHEIRA",
+            "Bowdichia sp_SUCUPIRA",
+            "Brosimum paraensis_MUIRAPIRANGA",
+            "Carapa guianensis_ANDIROBA",
+            "Cariniana estrellensis_JEQUITIBA",
+            "Cedrela fissilis_CEDRO",
+            "Cedrelinga catenaeformis_CEDRORANA",
+            "Clarisia racemosa_GUARIUBA",
+            "Cordia Goeldiana_FREIJO",
+            "Cordia alliodora_LOURO-AMARELO",
+            "Couratari sp_TAUARI",
+            "Dipteryx sp_CUMARU",
+            "Erisma uncinatum_CEDRINHO",
+            "Eucalyptus sp_EUCALIPTO",
+            "Euxylophora paraensis_PAU AMARELO",
+            "Goupia glabra_CUPIUBA",
+            "Grevilea robusta_GREVILEA",
+            "Handroanthus sp_IPE",
+            "Hymenaea sp_JATOBA",
+            "Hymenolobium petraeum_ANGELIM PEDRA",
+            "Laurus nobilis_LOURO",
+            "Machaerium sp_MACHAERIUM",
+            "Manilkara huberi_MASSARANDUBA",
+            "Melia azedarach_CINAMOMO",
+            "Mezilaurus itauba_ITAUBA",
+            "Micropholis venulosa_CURUPIXA",
+            "Mimosa scabrella_BRACATINGA",
+            "Myroxylon balsamum_CABREUVA VERMELHA",
+            "Ocotea porosa_IMBUIA",
+            "Peltagyne sp_ROXINHO",
+            "Pinus sp_PINUS",
+            "Podocarpus lambertii_PODOCARPUS",
+            "Pouteria pachycarpa_GOIABAO",
+            "Simarouba amara_MARUPA",
+            "Swietenia macrophylla_MOGNO",
+            "Virola surinamensis_VIROLA",
+            "Vochysia sp_QUARUBA CEDRO"
     };
 
     @Override
@@ -65,9 +108,26 @@ public class ResultsFragment extends Fragment {
         viewModel.getImage().observe(getViewLifecycleOwner(), image -> {
             ModelUtilities modelUtilities = new ModelUtilities(getContext());
 
+            long startTime = System.nanoTime();
+
             float[][][][] inputArray = modelUtilities.preprocessImages(image);
 
             InferenceResult results = modelUtilities.runInference(inputArray);
+
+            StringBuilder resultBuilder = new StringBuilder();
+            for (int i = 0; i < results.results.length; i++) {
+                float percentage = results.results[i] * 100;
+                String name = classes[results.indices[i]];
+                resultBuilder.append(String.format("Classe: %s, Confiança: %.6f%%", name, percentage));
+                resultBuilder.append("\n");
+            }
+            System.out.println(resultBuilder.toString());
+
+            long endTime = System.nanoTime();
+            long inferenceTime = endTime - startTime;
+
+            double inferenceTimeMs = inferenceTime / 1_000_000.0;
+            System.out.println("Tempo de inferência e processamento: " + inferenceTimeMs + " ms");
 
             hBarChart = view.findViewById(R.id.resultsBarChart);
             speciesNamesText = view.findViewById(R.id.speciesNames);

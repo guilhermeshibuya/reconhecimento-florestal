@@ -9,6 +9,7 @@ import android.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -17,9 +18,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Locale;
+import java.util.stream.IntStream;
 
 import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
+import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
 import kotlin.jvm.internal.FloatSpreadBuilder;
 
@@ -64,139 +67,48 @@ public class ModelUtilities {
             OrtEnvironment env = OrtEnvironment.getEnvironment();
             OrtSession.SessionOptions options = new OrtSession.SessionOptions();
 
-            // Obtém o identificador do recurso raw do modelo ONNX
-            int resourceId = mContext.getResources().getIdentifier("best3", "raw", mContext.getPackageName());
+            InputStream inputStream = mContext.getResources().openRawResource(R.raw.best_30_06_2024);
+            byte[] buffer = new byte[inputStream.available()];
+            inputStream.read(buffer);
 
-            InputStream inputStream = mContext.getResources().openRawResource(resourceId);
-
-            File modelFile = new File(mContext.getCacheDir(), "best3.onnx");
-            FileOutputStream outputStream = new FileOutputStream(modelFile);
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = inputStream.read(buffer)) > 0) {
-                outputStream.write(buffer, 0, length);
-            }
-            outputStream.close();
-            inputStream.close();
-
-            OrtSession session = env.createSession(modelFile.getAbsolutePath(), options);
+            OrtSession session = env.createSession(buffer, options);
 
             OnnxTensor inputTensor = OnnxTensor.createTensor(env, inputArray);
+
+            long startTime = System.nanoTime();
+
             OrtSession.Result output = session.run(Collections.singletonMap("images", inputTensor));
 
-            float[][] outputValues = (float[][]) output.get(0).getValue();
-            top5indices = getTop5Indices(outputValues[0]);
+            long endTime = System.nanoTime();
+            long inferenceTime = endTime - startTime;
 
+            double inferenceTimeMs = inferenceTime / 1_000_000.0;
+            System.out.println("Tempo de inferência: " + inferenceTimeMs + " ms");
+
+            float[][] outputValues = (float[][]) output.get(0).getValue();
+//            top5indices = getTop5Indices(outputValues[0]);
+            top5indices = getTop5Indices(outputValues[0]);
             inputTensor.close();
+            session.close();
 
             for (int i = 0; i < 5; i++) {
                 int index = top5indices[i];
                 results[i] = outputValues[0][index];
-//                Log.d("OUTPUTS", i + 1 +  ": " + classes[index] + " - " + results[i] * 100);
             }
-//            Log.d("OUTPUT", Arrays.toString(outputValues[0]));
-//            Log.d("INDICES OUTPUT", Arrays.toString(top5indices));
-        } catch (Exception e) {
+        } catch (OrtException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
         }
         return new InferenceResult(results, top5indices);
     }
 
-    private void quickSort(float[] arr, int[] indices, int start, int end) {
-        if (start < end) {
-            int pivotIndex = partition(arr, indices, start, end);
-
-            quickSort(arr, indices, start, pivotIndex - 1);
-            quickSort(arr, indices, pivotIndex + 1, end);
-        }
-    }
-
-    private int partition(float[] arr, int[] indices, int start, int end) {
-        float pivot = arr[end];
-        int i = start - 1;
-
-        for (int j = start; j < end; j++) {
-            if (arr[j] >= pivot) {
-                i++;
-
-                float temp = arr[i];
-                arr[i] = arr[j];
-                arr[j] = temp;
-
-                int tempIndex = indices[i];
-                indices[i] = indices[j];
-                indices[j] = tempIndex;
-            }
-        }
-
-        float temp = arr[i + 1];
-        arr[i + 1] = arr[end];
-        arr[end] = temp;
-
-        int tempIndex = indices[i + 1];
-        indices[i + 1] = indices[end];
-        indices[end] = tempIndex;
-
-        return i + 1;
-    }
-
     private int[] getTop5Indices(float[] result) {
-        int[] indices = new int[result.length];
-        for (int i = 0; i < indices.length; i++) {
-            indices[i] = i;
-        }
-
-        float[] clone = result.clone();
-        quickSort(clone, indices, 0, clone.length - 1);
-
-        return Arrays.copyOfRange(indices, 0, 5);
-    }
-
-//    private void quickSort(float[] arr, int start, int end) {
-//        if (start < end) {
-//            int pivot = partition(arr, start, end);
-//
-//            quickSort(arr, start, pivot - 1);
-//            quickSort(arr ,pivot + 1, end);
-//        }
-//    }
-//
-//    private int partition(float[] arr, int start, int end)
-//    {
-//        float pivot = arr[end];
-//        int i = (start - 1);
-//
-//        for (int j = start; j < end; j++) {
-//            if (arr[j] >= pivot) {
-//                i++;
-//
-//                float temp = arr[i];
-//                arr[i] = arr[j];
-//                arr[j] = temp;
-//            }
-//        }
-//        float temp = arr[i + 1];
-//        arr[i + 1] = arr[end];
-//        arr[end] = temp;
-//
-//        return i + 1;
-//    }
-
-    private float[] formatResults(float[][] output) {
-        int n = 5;
-        float[] clone = output[0].clone();
-        float[] results = new float[n];
-
-//        quickSort(clone, 0, clone.length - 1);
-
-//        StringBuilder strBuilder = new StringBuilder();
-
-        for (int i = 0; i < n; i++) {
-            float prob = clone[i] * 100;
-            results[i] = prob;
-//            strBuilder.append("Classe ").append(i).append(": ").append(String.format(Locale.getDefault(), "%.4f", prob)).append("%\n");
-        }
-//        return strBuilder.toString();
-        return results;
+        return IntStream.range(0, result.length)
+                .boxed()
+                .sorted((i, j) -> Float.compare(result[j], result[i]))
+                .mapToInt(element -> element)
+                .limit(5)
+                .toArray();
     }
 }

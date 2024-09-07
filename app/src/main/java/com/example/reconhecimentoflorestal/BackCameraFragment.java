@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -151,7 +152,7 @@ public class BackCameraFragment extends Fragment {
                     if (tempFile.exists()) {
                         boolean deleted = tempFile.delete();
                         if (!deleted) {
-                            Toast.makeText(requireContext(), "Erro ao excluir a imagem temporária", Toast.LENGTH_SHORT).show();
+                            Log.e("TEMP IMG", "Erro ao excluir a imagem temporária");
                         }
                     }
                 }
@@ -203,15 +204,6 @@ public class BackCameraFragment extends Fragment {
             viewModel.setImage(cropped);
 
             switchToResultsFragment();
-
-            // NOVO CÓDIGO
-//            ModelUtilities modelUtilities = new ModelUtilities(getContext());
-
-//            Bitmap cropped = BitmapFactory.decodeFile(file.getAbsolutePath());
-
-//            float[][][][] inputArray = modelUtilities.preprocessImages(cropped);
-
-//            modelUtilities.runInference(inputArray);
         } catch (Exception e) {
             Toast.makeText(
                     requireContext().getApplicationContext(),
