@@ -3,28 +3,16 @@ package com.example.reconhecimentoflorestal;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.os.Debug;
-import android.util.Half;
-import android.util.Log;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.text.DecimalFormat;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.Locale;
 import java.util.stream.IntStream;
 
 import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
-import kotlin.jvm.internal.FloatSpreadBuilder;
 
 class InferenceResult {
     public float[] results;
